@@ -1,0 +1,44 @@
+name: Bug
+description: Un comportement différent de celui attendu
+labels: ["type:bug"]
+body:
+  - type: textarea
+    id: observed
+    attributes:
+      label: Comportement observé
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Comportement attendu
+      description: Citer la règle de gestion ou le critère d'acceptation si possible
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Étapes pour reproduire
+      placeholder: |
+        1. Se connecter en tant que ...
+        2. ...
+    validations:
+      required: true
+  - type: dropdown
+    id: env
+    attributes:
+      label: Environnement
+      options: [Local, CI, En ligne]
+    validations:
+      required: true
+  - type: input
+    id: trace
+    attributes:
+      label: traceId ou correlation ID
+      description: Présent dans la réponse d'erreur de l'API
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs utiles
+      description: Sans aucun secret ni donnée personnelle
+      render: text

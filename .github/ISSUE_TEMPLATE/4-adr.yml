@@ -1,0 +1,25 @@
+name: Décision d'architecture (ADR)
+description: Une décision structurante à étudier et documenter
+title: "ADR-0xx : "
+labels: ["type:adr"]
+body:
+  - type: textarea
+    id: question
+    attributes:
+      label: Question à trancher
+    validations:
+      required: true
+  - type: textarea
+    id: options
+    attributes:
+      label: Options envisagées
+      placeholder: |
+        1. ...
+        2. ...
+  - type: dropdown
+    id: increment
+    attributes:
+      label: À trancher en
+      options: [I0, I1, I2, I3, I4, I5, I6, I7, I8]
+    validations:
+      required: true

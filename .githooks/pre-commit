@@ -1,0 +1,8 @@
+#!/usr/bin/env bash
+# Bloque un commit contenant un secret (mot de passe, cle, jeton).
+set -euo pipefail
+if ! command -v gitleaks >/dev/null; then
+  echo "[pre-commit] gitleaks absent : installe-le (voir docs/00-mise-en-place.md)." >&2
+  exit 1
+fi
+gitleaks git --pre-commit --staged --redact --no-banner

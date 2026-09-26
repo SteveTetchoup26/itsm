@@ -1,0 +1,33 @@
+name: Tâche technique
+description: Travail technique sans valeur métier directe (pipeline, infrastructure, outillage)
+labels: ["type:tech"]
+body:
+  - type: textarea
+    id: goal
+    attributes:
+      label: Objectif
+      description: Ce qu'on veut obtenir et pourquoi
+    validations:
+      required: true
+  - type: textarea
+    id: done
+    attributes:
+      label: Critères de fin
+      description: Comment sait-on que c'est terminé ?
+      placeholder: |
+        1. ...
+        2. ...
+    validations:
+      required: true
+  - type: dropdown
+    id: increment
+    attributes:
+      label: Incrément
+      options: [I0, I1, I2, I3, I4, I5, I6, I7, I8]
+    validations:
+      required: true
+  - type: input
+    id: adr
+    attributes:
+      label: ADR lié
+      placeholder: ADR-004

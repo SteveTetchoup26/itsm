@@ -1,0 +1,37 @@
+# Mises a jour automatiques des dependances (Pull Requests hebdomadaires).
+# Les blocs commentes seront actives en I0, quand backend/ et frontend/ existeront.
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    commit-message:
+      prefix: "chore(deps)"
+
+#  - package-ecosystem: maven
+#    directory: /backend
+#    schedule:
+#      interval: weekly
+#    commit-message:
+#      prefix: "chore(deps)"
+#    groups:
+#      spring:
+#        patterns: ["org.springframework*"]
+#
+#  - package-ecosystem: npm
+#    directory: /frontend
+#    schedule:
+#      interval: weekly
+#    commit-message:
+#      prefix: "chore(deps)"
+#    groups:
+#      angular:
+#        patterns: ["@angular/*", "@angular-devkit/*"]
+#
+#  - package-ecosystem: docker
+#    directories: ["/backend", "/frontend"]
+#    schedule:
+#      interval: weekly
+#    commit-message:
+#      prefix: "chore(deps)"

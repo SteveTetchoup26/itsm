@@ -1,0 +1,49 @@
+# ===== Secrets : ne jamais versionner =====
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.jks
+**/wallet/
+Wallet_*.zip
+*.tfvars
+!*.tfvars.example
+
+# ===== Java / Maven =====
+target/
+*.class
+*.log
+hs_err_pid*
+.mvn/wrapper/maven-wrapper.jar
+
+# ===== Node / Angular =====
+node_modules/
+dist/
+.angular/
+coverage/
+npm-debug.log*
+
+# ===== Tests end-to-end =====
+e2e/test-results/
+e2e/playwright-report/
+e2e/.auth/
+
+# ===== Terraform =====
+.terraform/
+*.tfstate
+*.tfstate.*
+.terraform.lock.hcl.bak
+
+# ===== IDE =====
+.idea/
+*.iml
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+
+# ===== Systeme =====
+.DS_Store
+Thumbs.db
+~$*.docx

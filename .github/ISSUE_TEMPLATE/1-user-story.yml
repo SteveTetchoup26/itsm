@@ -1,0 +1,52 @@
+name: User story
+description: Une fonctionnalité du cahier des charges fonctionnel
+title: "US-xx : "
+labels: ["type:story"]
+body:
+  - type: input
+    id: ref
+    attributes:
+      label: Référence
+      description: Identifiant dans le cahier des charges fonctionnel
+      placeholder: US-01
+    validations:
+      required: true
+  - type: textarea
+    id: story
+    attributes:
+      label: User story
+      placeholder: En tant que ..., je veux ... afin de ...
+    validations:
+      required: true
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Critères d'acceptation
+      description: Au format Étant donné / Quand / Alors. Chaque critère deviendra un test automatisé.
+      render: gherkin
+    validations:
+      required: true
+  - type: input
+    id: rules
+    attributes:
+      label: Règles de gestion concernées
+      placeholder: RG-01, RG-02
+  - type: dropdown
+    id: increment
+    attributes:
+      label: Incrément
+      options: [I0, I1, I2, I3, I4, I5, I6, I7, I8]
+    validations:
+      required: true
+  - type: dropdown
+    id: priority
+    attributes:
+      label: Priorité MoSCoW
+      options: [Must, Should, Could]
+    validations:
+      required: true
+  - type: textarea
+    id: notes
+    attributes:
+      label: Notes techniques
+      description: Pistes de conception, questions ouvertes, ADR à rédiger
