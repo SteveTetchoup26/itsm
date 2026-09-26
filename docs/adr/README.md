@@ -10,7 +10,7 @@ Modèle : [0000-template.md](0000-template.md)
 |---|---|---|---|
 | ADR-001 | Monorepo plutôt que plusieurs dépôts | I0 | Accepté |
 | ADR-002 | Stratégie de branches et de versions | I0 | Accepté |
-| ADR-003 | Versions de la pile technique | I0 | À rédiger |
+| ADR-003 | Versions de la pile technique | I0 | Accepté |
 | ADR-004 | Hébergement en ligne : Oracle Cloud Always Free et Autonomous Database | I0 | Accepté |
 | ADR-005 | Outil de migration de schéma : Flyway | I0 | Accepté |
 | ADR-006 | Monolithe modulaire et architecture hexagonale | I1 | À rédiger |
