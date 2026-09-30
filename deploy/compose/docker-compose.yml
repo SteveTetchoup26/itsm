@@ -1,0 +1,30 @@
+# Local development environment.
+# Usage: from this directory, `docker compose up -d` (reads ./.env).
+
+name: itsm
+
+services:
+  oracle:
+    image: gvenzl/oracle-free:23.26.2-slim-faststart
+    environment:
+      ORACLE_PASSWORD: ${ORACLE_PASSWORD:?ORACLE_PASSWORD must be set in .env}
+      # Read by oracle/initdb scripts, on the first database startup only.
+      ITSM_OWNER_PASSWORD: ${ITSM_OWNER_PASSWORD:?ITSM_OWNER_PASSWORD must be set in .env}
+      ITSM_APP_PASSWORD: ${ITSM_APP_PASSWORD:?ITSM_APP_PASSWORD must be set in .env}
+    ports:
+      # Loopback only: the database must not be reachable from the network.
+      - "127.0.0.1:${ORACLE_PORT:-1521}:1521"
+    volumes:
+      - oracle-data:/opt/oracle/oradata
+      - ./oracle/initdb:/container-entrypoint-initdb.d:ro
+    # Oracle Free sizes itself to SGA 1.5 GiB + PGA 0.5 GiB: 2 GiB leaves no headroom.
+    mem_limit: 2560m
+    healthcheck:
+      test: ["CMD", "healthcheck.sh"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
+volumes:
+  oracle-data:
