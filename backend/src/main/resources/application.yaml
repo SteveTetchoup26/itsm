@@ -1,0 +1,51 @@
+spring:
+  application:
+    name: itsm-backend
+  threads:
+    virtual:
+      enabled: true
+
+  # Application account: reads and writes data, cannot change the schema (ADR-005).
+  datasource:
+    url: ${ITSM_DB_URL:jdbc:oracle:thin:@//localhost:1521/FREEPDB1}
+    username: ${ITSM_APP_USER:ITSM_APP}
+    password: ${ITSM_APP_PASSWORD}
+    hikari:
+      # Tables belong to the schema owner: resolve unqualified names there.
+      connection-init-sql: ALTER SESSION SET CURRENT_SCHEMA = ${ITSM_OWNER_USER:ITSM_OWNER}
+      # Fail fast when the database is down (default: 30 s), for requests and probes alike.
+      # Hikari binds this as a plain long: milliseconds, no "5s" duration syntax.
+      connection-timeout: 5000
+
+  # Schema owner: used by Flyway only, on its own connection, at startup.
+  flyway:
+    user: ${ITSM_OWNER_USER:ITSM_OWNER}
+    password: ${ITSM_OWNER_PASSWORD}
+    # Flyway's default name is lowercase, which Oracle only accepts quoted.
+    table: FLYWAY_SCHEMA_HISTORY
+
+server:
+  shutdown: graceful
+
+# One JSON object per line on stdout (Elastic Common Schema), read by the log collector.
+logging:
+  structured:
+    format:
+      console: ecs # Elastic Common Schema
+    ecs:
+      service:
+        # Replaced at build time by Maven resource filtering (spring-boot-starter-parent).
+        version: "@project.version@"
+
+management:
+  endpoints:
+    web:
+      exposure:
+        # Explicit even though it is the default: nothing else is reachable over HTTP.
+        include: health
+  endpoint:
+    health:
+      group:
+        # Database in readiness only: restarting the application cannot fix a database outage.
+        readiness:
+          include: readinessState, db
