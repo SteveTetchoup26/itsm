@@ -47,3 +47,5 @@ e2e/.auth/
 .DS_Store
 Thumbs.db
 ~$*.docx
+# Fichiers de verrou de LibreOffice (document ouvert)
+.~lock.*#
