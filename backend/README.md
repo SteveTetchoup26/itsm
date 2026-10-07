@@ -74,6 +74,32 @@ lire en local :
 ./mvnw spring-boot:run | jq -R -r 'fromjson? | "\(.log.level)\t\(.message)"'
 ```
 
+## Tests
+
+| Type | Nom des classes | Lancé par | Besoin |
+|---|---|---|---|
+| Unitaires | `*Test` | `./mvnw test` (surefire) | rien : ni Spring, ni base, ni Docker |
+| Intégration | `*IT` | `./mvnw verify` (failsafe, après `package`) | Docker |
+
+- Les tests d'intégration démarrent un Oracle jetable avec Testcontainers
+  (`gvenzl/oracle-free:23.26.2-slim-faststart`, même image qu'en local) et y exécutent le script
+  d'initialisation de `deploy/compose/oracle/initdb/` : ils utilisent les mêmes comptes
+  `ITSM_OWNER` et `ITSM_APP` que les autres environnements. La base locale n'a pas besoin de
+  tourner, et aucune variable d'environnement n'est nécessaire.
+- La connexion passe par `@DynamicPropertySource` (et non `@ServiceConnection`), pour que le
+  reste de `application.yaml` s'applique tel quel.
+- Mockito est déclaré comme agent Java pour surefire et failsafe (`-javaagent` dans `argLine`) :
+  le chargement dynamique d'agents sera interdit par les prochains JDK.
+
+Couverture (JaCoCo) des tests unitaires et d'intégration réunis, générée par `./mvnw verify` :
+
+```bash
+xdg-open target/site/jacoco/index.html   # rapport HTML ; jacoco.xml est destiné à SonarQube Cloud
+```
+
+La couverture indique ce qui n'est **jamais** exécuté par les tests ; une ligne couverte n'est
+pas forcément vérifiée par une assertion.
+
 ## Formatage
 
 Spotless avec palantir-java-format ; `./mvnw verify` échoue si le code n'est pas formaté.
