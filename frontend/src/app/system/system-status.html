@@ -1,0 +1,30 @@
+<section class="status" aria-live="polite">
+  <h1>État du système</h1>
+
+  @if (info.isLoading()) {
+    <p>Chargement…</p>
+  } @else if (info.error()) {
+    <p class="message message--error" role="alert">
+      Le serveur ne répond pas. Réessayez dans quelques instants.
+    </p>
+    <button type="button" (click)="info.reload()">Réessayer</button>
+  } @else if (info.hasValue()) {
+    @let status = info.value();
+    <dl>
+      <dt>Version de l'application</dt>
+      <dd>{{ status.version }}</dd>
+
+      <dt>Version du schéma</dt>
+      <dd>{{ status.schemaVersion ?? 'aucune migration appliquée' }}</dd>
+
+      <dt>Base de données</dt>
+      <dd>
+        @if (status.database === 'UP') {
+          <span class="badge badge--up">disponible</span>
+        } @else {
+          <span class="badge badge--down">indisponible</span>
+        }
+      </dd>
+    </dl>
+  }
+</section>

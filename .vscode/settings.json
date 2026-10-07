@@ -1,0 +1,7 @@
+{
+  // Shared project settings only (no personal preferences here).
+  // ESLint lives in frontend/node_modules: run the extension from that folder.
+  "eslint.workingDirectories": ["./frontend"],
+  // Angular templates are linted too (accessibility rules), not only TypeScript.
+  "eslint.validate": ["javascript", "typescript", "html"]
+}

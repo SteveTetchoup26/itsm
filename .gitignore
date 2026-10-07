@@ -24,6 +24,9 @@ dist/
 .angular/
 coverage/
 npm-debug.log*
+out-tsc/
+.sass-cache/
+__screenshots__/
 
 # ===== Tests end-to-end =====
 e2e/test-results/
