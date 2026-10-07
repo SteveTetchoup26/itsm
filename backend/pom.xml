@@ -17,6 +17,8 @@
         <java.version>25</java.version>
         <spotless-maven-plugin.version>3.10.3</spotless-maven-plugin.version>
         <palantir-java-format.version>2.101.0</palantir-java-format.version>
+        <!-- Empty by default; other plugins (JaCoCo) append to it. Required by @{argLine} below. -->
+        <argLine/>
     </properties>
     <dependencies>
         <dependency>
@@ -80,6 +82,26 @@
                         </goals>
                     </execution>
                 </executions>
+            </plugin>
+            <plugin>
+                <!-- Exposes each dependency's jar path as a property, e.g. ${org.mockito:mockito-core:jar} -->
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-dependency-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>properties</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <configuration>
+                    <!-- Mockito as a declared agent: dynamic self-attachment will be disallowed by future JDKs -->
+                    <argLine>@{argLine} -javaagent:${org.mockito:mockito-core:jar}</argLine>
+                </configuration>
             </plugin>
             <plugin>
                 <groupId>com.diffplug.spotless</groupId>
