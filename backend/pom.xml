@@ -17,6 +17,7 @@
         <java.version>25</java.version>
         <spotless-maven-plugin.version>3.10.3</spotless-maven-plugin.version>
         <palantir-java-format.version>2.101.0</palantir-java-format.version>
+        <jacoco-maven-plugin.version>0.8.15</jacoco-maven-plugin.version>
         <!-- Empty by default; other plugins (JaCoCo) append to it. Required by @{argLine} below. -->
         <argLine/>
     </properties>
@@ -67,6 +68,16 @@
             <artifactId>spring-boot-starter-webmvc-test</artifactId>
             <scope>test</scope>
         </dependency>
+        <dependency>
+            <groupId>org.testcontainers</groupId>
+            <artifactId>testcontainers-junit-jupiter</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.testcontainers</groupId>
+            <artifactId>testcontainers-oracle-free</artifactId>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
 
     <build>
@@ -79,6 +90,28 @@
                         <!-- Writes META-INF/build-info.properties: exposes the version as BuildProperties -->
                         <goals>
                             <goal>build-info</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <!-- Coverage of unit AND integration tests: both test JVMs get the agent through
+                     @{argLine} and append to the same target/jacoco.exec; one report in verify. -->
+                <groupId>org.jacoco</groupId>
+                <artifactId>jacoco-maven-plugin</artifactId>
+                <version>${jacoco-maven-plugin.version}</version>
+                <executions>
+                    <execution>
+                        <id>prepare-agent</id>
+                        <goals>
+                            <goal>prepare-agent</goal>
+                        </goals>
+                    </execution>
+                    <execution>
+                        <!-- Bound to verify by default; declared after failsafe's integration-test phase -->
+                        <id>report</id>
+                        <goals>
+                            <goal>report</goal>
                         </goals>
                     </execution>
                 </executions>
@@ -100,6 +133,15 @@
                 <artifactId>maven-surefire-plugin</artifactId>
                 <configuration>
                     <!-- Mockito as a declared agent: dynamic self-attachment will be disallowed by future JDKs -->
+                    <argLine>@{argLine} -javaagent:${org.mockito:mockito-core:jar}</argLine>
+                </configuration>
+            </plugin>
+            <plugin>
+                <!-- Runs *IT classes during integration-test and fails the build in verify.
+                     Executions are inherited from spring-boot-starter-parent. -->
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-failsafe-plugin</artifactId>
+                <configuration>
                     <argLine>@{argLine} -javaagent:${org.mockito:mockito-core:jar}</argLine>
                 </configuration>
             </plugin>

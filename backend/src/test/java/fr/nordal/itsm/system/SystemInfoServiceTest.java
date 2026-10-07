@@ -37,6 +37,17 @@ class SystemInfoServiceTest {
     }
 
     @Test
+    void reports_no_schema_version_when_no_migration_was_applied() {
+        when(repository.applicationName()).thenReturn("ITSM");
+        when(repository.schemaVersion()).thenReturn(Optional.empty());
+        var service = new SystemInfoService(repository, Optional.of(buildPropertiesWithVersion("1.2.0")));
+
+        var info = service.info();
+
+        assertThat(info).isEqualTo(new SystemInfo("ITSM", "1.2.0", null, DatabaseStatus.UP));
+    }
+
+    @Test
     void reports_unknown_version_without_build_info() {
         when(repository.applicationName()).thenReturn("ITSM");
         when(repository.schemaVersion()).thenReturn(Optional.of("3"));
