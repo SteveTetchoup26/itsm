@@ -1,0 +1,6 @@
+# Generated output: never formatted (Prettier only reads the .gitignore of its own folder).
+dist/
+.angular/
+coverage/
+# Managed by npm.
+package-lock.json

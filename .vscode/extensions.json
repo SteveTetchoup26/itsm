@@ -1,0 +1,4 @@
+{
+  // Extensions recommended by VS Code when opening the repository (frontend work).
+  "recommendations": ["angular.ng-template", "dbaeumer.vscode-eslint", "esbenp.prettier-vscode"]
+}
