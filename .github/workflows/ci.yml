@@ -77,7 +77,8 @@ jobs:
           node-version: '24'
           cache: npm
           cache-dependency-path: frontend/package-lock.json
-      - run: npm ci
+      # No dependency lifecycle scripts (supply-chain risk); the build does not need them.
+      - run: npm ci --ignore-scripts
       - run: npm run format:check
       - run: npm run lint
       - run: npm test -- --watch=false
