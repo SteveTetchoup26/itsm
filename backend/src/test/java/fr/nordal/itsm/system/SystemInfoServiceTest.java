@@ -23,7 +23,7 @@ class SystemInfoServiceTest {
 
         var info = service.info();
 
-        assertThat(info).isEqualTo(new SystemInfo("ITSM", "1.2.0", "3", DatabaseStatus.UP));
+        assertThat(info).isEqualTo(new SystemInfo("ITSM", "9.9.9", "3", DatabaseStatus.UP));
     }
 
     @Test
