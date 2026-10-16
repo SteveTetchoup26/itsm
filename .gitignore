@@ -27,6 +27,7 @@ npm-debug.log*
 out-tsc/
 .sass-cache/
 __screenshots__/
+.scannerwork/
 
 # ===== Tests end-to-end =====
 e2e/test-results/

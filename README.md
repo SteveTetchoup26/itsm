@@ -1,5 +1,7 @@
 # ITSM Platform
 
+[![CI](https://github.com/SteveTetchoup26/itsm/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/SteveTetchoup26/itsm/actions/workflows/ci.yml)
+
 Plateforme de gestion des incidents et des demandes informatiques (IT Service Management),
 construite comme un projet d'entreprise : du besoin métier jusqu'à l'exploitation en production.
 
@@ -9,7 +11,7 @@ construite comme un projet d'entreprise : du besoin métier jusqu'à l'exploitat
 
 | Incrément | Objectif | Statut |
 |---|---|---|
-| I0 | Walking skeleton : pipeline et déploiement continus | À faire |
+| I0 | Walking skeleton : pipeline et déploiement continus | En cours |
 | I1 | Déclarer et consulter des tickets | À faire |
 | I2 | Traiter les tickets de bout en bout | À faire |
 | I3 | Piloter et administrer (fin du MVP) | À faire |
@@ -32,6 +34,7 @@ GitHub Actions · OpenTelemetry · Grafana · Oracle Cloud (Always Free)
 | [Cahier des charges technique](docs/02-cahier-des-charges-technique.docx) | Architecture, environnements, outils, conventions |
 | [Décisions d'architecture (ADR)](docs/adr/README.md) | Chaque choix structurant et sa justification |
 | [Mise en place](docs/00-mise-en-place.md) | Comptes, dépôt, poste de travail |
+| [Pipeline CI](docs/pipeline-ci.md) | Jobs, protection de `main`, SonarQube Cloud, Dependabot |
 | [Journal](docs/journal/README.md) | Rétrospectives d'incrément |
 
 ## Démarrage rapide

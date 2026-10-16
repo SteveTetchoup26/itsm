@@ -18,6 +18,13 @@
         <spotless-maven-plugin.version>3.10.3</spotless-maven-plugin.version>
         <palantir-java-format.version>2.101.0</palantir-java-format.version>
         <jacoco-maven-plugin.version>0.8.15</jacoco-maven-plugin.version>
+        <sonar-maven-plugin.version>5.8.0.7211</sonar-maven-plugin.version>
+        <!-- SonarQube Cloud analysis, run by the CI pipeline (./mvnw sonar:sonar after verify).
+             The JaCoCo report is read from its default location, target/site/jacoco/jacoco.xml. -->
+        <sonar.organization>stevetetchoup26</sonar.organization>
+        <sonar.projectKey>SteveTetchoup26_itsm-backend</sonar.projectKey>
+        <sonar.projectName>itsm-backend</sonar.projectName>
+        <sonar.host.url>https://sonarcloud.io</sonar.host.url>
         <!-- Empty by default; other plugins (JaCoCo) append to it. Required by @{argLine} below. -->
         <argLine/>
     </properties>
@@ -81,6 +88,16 @@
     </dependencies>
 
     <build>
+        <pluginManagement>
+            <plugins>
+                <plugin>
+                    <!-- Version only: the plugin runs on demand with ./mvnw sonar:sonar -->
+                    <groupId>org.sonarsource.scanner.maven</groupId>
+                    <artifactId>sonar-maven-plugin</artifactId>
+                    <version>${sonar-maven-plugin.version}</version>
+                </plugin>
+            </plugins>
+        </pluginManagement>
         <plugins>
             <plugin>
                 <groupId>org.springframework.boot</groupId>

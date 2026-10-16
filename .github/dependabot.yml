@@ -1,5 +1,6 @@
-# Mises a jour automatiques des dependances (Pull Requests hebdomadaires).
-# Les blocs commentes seront actives en I0, quand backend/ et frontend/ existeront.
+# Mises a jour automatiques des dependances (Pull Requests hebdomadaires, testees par la CI).
+# ADR-003 : les versions majeures et mineures de la pile (Spring Boot, Angular) sont des
+# decisions planifiees ; Dependabot ne propose pour elles que les correctifs.
 version: 2
 updates:
   - package-ecosystem: github-actions
@@ -9,26 +10,48 @@ updates:
     commit-message:
       prefix: "chore(deps)"
 
-#  - package-ecosystem: maven
-#    directory: /backend
-#    schedule:
-#      interval: weekly
-#    commit-message:
-#      prefix: "chore(deps)"
-#    groups:
-#      spring:
-#        patterns: ["org.springframework*"]
-#
-#  - package-ecosystem: npm
-#    directory: /frontend
-#    schedule:
-#      interval: weekly
-#    commit-message:
-#      prefix: "chore(deps)"
-#    groups:
-#      angular:
-#        patterns: ["@angular/*", "@angular-devkit/*"]
-#
+  - package-ecosystem: maven
+    directory: /backend
+    schedule:
+      interval: weekly
+    commit-message:
+      prefix: "chore(deps)"
+    groups:
+      spring:
+        patterns: ["org.springframework*"]
+    ignore:
+      # Spring Boot fixes the versions of its ecosystem (ADR-003, principle 4): only its patches.
+      - dependency-name: "org.springframework.boot:*"
+        update-types: ["version-update:semver-major", "version-update:semver-minor"]
+
+  - package-ecosystem: npm
+    directory: /frontend
+    schedule:
+      interval: weekly
+    commit-message:
+      prefix: "chore(deps)"
+    groups:
+      angular:
+        patterns: ["@angular/*", "@angular-devkit/*", "angular-eslint", "@angular-eslint/*"]
+      # @vitest/coverage-v8 requires the exact same version as vitest.
+      vitest:
+        patterns: ["vitest", "@vitest/*"]
+    ignore:
+      # Angular majors and minors go through "ng update" (migrations), not Dependabot.
+      - dependency-name: "@angular/*"
+        update-types: ["version-update:semver-major", "version-update:semver-minor"]
+      - dependency-name: "@angular-devkit/*"
+        update-types: ["version-update:semver-major", "version-update:semver-minor"]
+
+  # Images referenced by the local Docker Compose file (Oracle Free).
+  - package-ecosystem: docker-compose
+    directory: /deploy/compose
+    schedule:
+      interval: weekly
+    commit-message:
+      prefix: "chore(deps)"
+
+  # Dockerfiles of backend and frontend arrive with I0-06: enable this block then.
 #  - package-ecosystem: docker
 #    directories: ["/backend", "/frontend"]
 #    schedule:
