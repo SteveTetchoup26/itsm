@@ -15,7 +15,7 @@
     <description>ITSM platform backend</description>
     <properties>
         <java.version>25</java.version>
-        <spotless-maven-plugin.version>3.10.3</spotless-maven-plugin.version>
+        <spotless-maven-plugin.version>3.10.4</spotless-maven-plugin.version>
         <palantir-java-format.version>2.101.0</palantir-java-format.version>
         <jacoco-maven-plugin.version>0.8.15</jacoco-maven-plugin.version>
         <sonar-maven-plugin.version>5.8.0.7211</sonar-maven-plugin.version>
