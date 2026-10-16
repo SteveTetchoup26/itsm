@@ -5,7 +5,7 @@ name: itsm
 
 services:
   oracle:
-    image: gvenzl/oracle-free:23.26.2-slim-faststart
+    image: gvenzl/oracle-free:23.26.3-slim-faststart
     environment:
       ORACLE_PASSWORD: ${ORACLE_PASSWORD:?ORACLE_PASSWORD must be set in .env}
       # Read by oracle/initdb scripts, on the first database startup only.
