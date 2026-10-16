@@ -34,7 +34,7 @@ class SystemInfoIT {
     private static final String APP_PASSWORD = "TestApp2026";
 
     @Container
-    static final OracleContainer oracle = new OracleContainer("gvenzl/oracle-free:23.26.2-slim-faststart")
+    static final OracleContainer oracle = new OracleContainer("gvenzl/oracle-free:23.26.3-slim-faststart")
             .withEnv("ITSM_OWNER_PASSWORD", OWNER_PASSWORD)
             .withEnv("ITSM_APP_PASSWORD", APP_PASSWORD)
             .withCopyFileToContainer(
@@ -76,9 +76,10 @@ class SystemInfoIT {
 
     @Test
     void application_account_cannot_modify_reference_data() {
-        assertThatThrownBy(() -> applicationJdbcClient
-                        .sql("UPDATE APP_INFO SET INFO_VALUE = 'changed'")
-                        .update())
+        var update = applicationJdbcClient.sql("UPDATE APP_INFO SET INFO_VALUE = 'changed'");
+
+        // Only the database call is inside the lambda: the expected exception can come from nowhere else.
+        assertThatThrownBy(update::update)
                 .isInstanceOf(DataAccessException.class)
                 .hasMessageContaining("ORA-41900");
     }
