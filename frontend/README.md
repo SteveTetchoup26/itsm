@@ -37,6 +37,20 @@ Le code appelle toujours des URL **relatives** (`/api/...`), jamais `http://loca
 
 Toute modification de `proxy.conf.json` demande de redémarrer `npm start`.
 
+## Image Docker
+
+`Dockerfile` multi-étapes : build Angular avec Node sur l'architecture de la machine, puis
+image d'exécution `nginxinc/nginx-unprivileged` (Nginx non root, utilisateur 101, port 8080, sans
+Node), avec les correctifs de sécurité d'Alpine (`apk upgrade`). `nginx.conf` renvoie
+`index.html` pour toute route inconnue (application monopage), met en cache un an les fichiers
+JS et CSS (leur nom contient une empreinte) et jamais `index.html`. HTTPS, compression et
+routage de `/api` sont faits par Caddy devant (I0-10).
+
+```bash
+docker buildx build --load -t itsm-frontend:local .
+docker run --rm -p 127.0.0.1:8082:8080 itsm-frontend:local   # http://localhost:8082
+```
+
 ## Organisation
 
 Le code est rangé par fonctionnalité : `src/app/system/` contient le composant `SystemStatus`,

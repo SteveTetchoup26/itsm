@@ -1,0 +1,7 @@
+# Only what the Dockerfile copies is needed: keeps the build context small and secrets out.
+target/
+.idea/
+*.iml
+.vscode/
+.env
+*.log

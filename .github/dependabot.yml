@@ -61,10 +61,19 @@ updates:
     commit-message:
       prefix: "chore(deps)"
 
-  # Dockerfiles of backend and frontend arrive with I0-06: enable this block then.
-#  - package-ecosystem: docker
-#    directories: ["/backend", "/frontend"]
-#    schedule:
-#      interval: weekly
-#    commit-message:
-#      prefix: "chore(deps)"
+  # Base images of the backend and frontend Dockerfiles.
+  - package-ecosystem: docker
+    directories: ["/backend", "/frontend"]
+    schedule:
+      interval: weekly
+    commit-message:
+      prefix: "chore(deps)"
+    ignore:
+      # Java 25 and Node 24 are the LTS chosen by ADR-003: no major upgrade by Dependabot.
+      - dependency-name: "eclipse-temurin"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "node"
+        update-types: ["version-update:semver-major"]
+      # Nginx: even minors are stable branches (1.30), odd ones mainline (1.31): stay on 1.30.x.
+      - dependency-name: "nginxinc/nginx-unprivileged"
+        update-types: ["version-update:semver-major", "version-update:semver-minor"]

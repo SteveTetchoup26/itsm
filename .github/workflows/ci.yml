@@ -27,6 +27,7 @@ jobs:
     outputs:
       backend: ${{ steps.filter.outputs.backend }}
       frontend: ${{ steps.filter.outputs.frontend }}
+      images: ${{ steps.images.outputs.list }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: dorny/paths-filter@ceb8a2b8f2d89434be7ff52d3de7ec3738c5cc9d # v4.0.3
@@ -40,6 +41,16 @@ jobs:
             frontend:
               - 'frontend/**'
               - '.github/workflows/ci.yml'
+      # JSON list of the components whose image must be rebuilt, e.g. ["backend","frontend"].
+      - id: images
+        env:
+          BACKEND: ${{ steps.filter.outputs.backend }}
+          FRONTEND: ${{ steps.filter.outputs.frontend }}
+        run: |
+          list=()
+          [ "$BACKEND" = "true" ] && list+=('"backend"')
+          [ "$FRONTEND" = "true" ] && list+=('"frontend"')
+          echo "list=[$(IFS=,; echo "${list[*]}")]" >> "$GITHUB_OUTPUT"
 
   backend:
     name: Backend (format, build, unit and integration tests)
@@ -139,11 +150,83 @@ jobs:
         with:
           category: /language:${{ matrix.language }}
 
+  # Docker images: built and scanned on every pull request, published to GHCR from main only.
+  images:
+    name: Image ${{ matrix.component }} (build, Trivy, publish from main)
+    needs: [changes, backend, frontend]
+    # Only when its component changed and its tests did not fail.
+    if: ${{ !cancelled() && !contains(needs.*.result, 'failure') && needs.changes.outputs.images != '[]' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      packages: write
+    strategy:
+      fail-fast: false
+      matrix:
+        component: ${{ fromJSON(needs.changes.outputs.images) }}
+    env:
+      IMAGE: ghcr.io/stevetetchoup26/itsm-${{ matrix.component }}
+      PUBLISH: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
+      # Same Trivy as on the developer machine, pinned by digest.
+      TRIVY: aquasec/trivy:0.76.1@sha256:790fd66d1697395d8693d1acaa1ea702406a20f109b6fc7bac8db623eca6c06c
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      # arm64 emulation: only the runtime stage runs emulated, the build stage uses $BUILDPLATFORM.
+      - uses: docker/setup-qemu-action@99012661954931238ded8c8b007157a8430204e1 # v4.4.0
+        with:
+          platforms: arm64
+      - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
+      # Tag sha-<short commit> and OCI labels (the source label links the package to this repository).
+      - id: meta
+        uses: docker/metadata-action@dc802804100637a589fabce1cb79ff13a1411302 # v6.2.0
+        with:
+          images: ${{ env.IMAGE }}
+          tags: type=sha,prefix=sha-,format=short
+
+      - name: Build for scanning (amd64)
+        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
+        with:
+          context: ${{ matrix.component }}
+          platforms: linux/amd64
+          load: true
+          tags: ${{ env.IMAGE }}:scan
+          cache-from: type=gha,scope=${{ matrix.component }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.component }}
+      - name: Trivy report (critical and high, not blocking)
+        run: >
+          docker run --rm -v /var/run/docker.sock:/var/run/docker.sock -v trivy-cache:/root/.cache
+          "$TRIVY" image --no-progress --scanners vuln --severity CRITICAL,HIGH --ignore-unfixed
+          --exit-code 0 "$IMAGE:scan"
+      - name: Trivy gate (fixable critical vulnerabilities block the pipeline)
+        run: >
+          docker run --rm -v /var/run/docker.sock:/var/run/docker.sock -v trivy-cache:/root/.cache
+          "$TRIVY" image --no-progress --scanners vuln --severity CRITICAL --ignore-unfixed
+          --exit-code 1 "$IMAGE:scan"
+
+      - name: Log in to GitHub Container Registry
+        if: env.PUBLISH == 'true'
+        uses: docker/login-action@81c6f93d4bc991e510b342a00b419b3bb4efc5c6 # v4.7.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Build amd64 and arm64 (pushed from main only)
+        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
+        with:
+          context: ${{ matrix.component }}
+          platforms: linux/amd64,linux/arm64
+          push: ${{ env.PUBLISH == 'true' }}
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha,scope=${{ matrix.component }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.component }}
+
   # Single required check: fails if any job failed or was cancelled; skipped jobs count as success.
   ci:
     name: ci
     if: always()
-    needs: [changes, backend, frontend, secrets, codeql]
+    needs: [changes, backend, frontend, secrets, codeql, images]
     runs-on: ubuntu-latest
     steps:
       - name: Check job results

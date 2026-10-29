@@ -100,6 +100,27 @@ xdg-open target/site/jacoco/index.html   # rapport HTML ; jacoco.xml est destin�
 La couverture indique ce qui n'est **jamais** exécuté par les tests ; une ligne couverte n'est
 pas forcément vérifiée par une assertion.
 
+## Image Docker
+
+`Dockerfile` multi-étapes : compilation avec le JDK sur l'architecture de la machine, puis image
+d'exécution `eclipse-temurin` (JRE seul), utilisateur non root `10001`, `.jar` découpé en couches
+Spring Boot (seule la couche du code change d'une version à l'autre), tas limité à 70 % de la
+mémoire du conteneur (`-XX:MaxRAMPercentage=70`). Le pipeline la construit pour `amd64` et `arm64`
+et la publie sur `ghcr.io/stevetetchoup26/itsm-backend` depuis `main` (voir
+[le pipeline](../docs/pipeline-ci.md)).
+
+Construire et lancer en local, contre la base de `deploy/compose` (réseau Docker `itsm_default`) :
+
+```bash
+docker buildx build --load -t itsm-backend:local .
+docker run --rm --network itsm_default -p 127.0.0.1:8081:8080 --memory 768m \
+  --env-file ../deploy/compose/.env \
+  -e ITSM_DB_URL='jdbc:oracle:thin:@//oracle:1521/FREEPDB1' itsm-backend:local
+```
+
+Dans un conteneur, `localhost` désigne le conteneur lui-même : la base est jointe par son nom de
+service, `oracle`.
+
 ## Formatage
 
 Spotless avec palantir-java-format ; `./mvnw verify` échoue si le code n'est pas formaté.
