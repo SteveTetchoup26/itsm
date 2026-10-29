@@ -29,7 +29,7 @@
     "@angular/cli": "^22.2.2",
     "@angular/compiler-cli": "^22.2.2",
     "@eslint/js": "^10.0.1",
-    "@vitest/coverage-v8": "^5.0.4",
+    "@vitest/coverage-v8": "^5.0.5",
     "angular-eslint": "22.6.0",
     "eslint": "^10.9.1",
     "jsdom": "^30.0.0",
