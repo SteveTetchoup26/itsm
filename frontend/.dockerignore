@@ -1,0 +1,8 @@
+# Rebuilt inside the image or useless there; keeps the build context small.
+node_modules/
+dist/
+.angular/
+coverage/
+.scannerwork/
+.env
+*.log
