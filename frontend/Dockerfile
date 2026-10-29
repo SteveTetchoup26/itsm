@@ -16,6 +16,11 @@ RUN npm run build
 # ---- Runtime stage: Nginx as a non-root user (uid 101), listening on 8080.
 # Built for each target architecture (amd64, arm64); Node is not in this image.
 FROM nginxinc/nginx-unprivileged:1.30.6-alpine
+# Security fixes of the Alpine packages published since the base image was built
+# (the image is scanned by Trivy, blocking on fixable critical vulnerabilities).
+USER root
+RUN apk upgrade --no-cache
+USER 101
 COPY nginx.conf /etc/nginx/conf.d/default.conf
 COPY --from=build /src/dist/itsm-frontend/browser/ /usr/share/nginx/html/
 EXPOSE 8080
