@@ -17,7 +17,7 @@
         <java.version>25</java.version>
         <spotless-maven-plugin.version>3.10.4</spotless-maven-plugin.version>
         <palantir-java-format.version>2.101.0</palantir-java-format.version>
-        <jacoco-maven-plugin.version>0.8.15</jacoco-maven-plugin.version>
+        <jacoco-maven-plugin.version>0.8.16</jacoco-maven-plugin.version>
         <sonar-maven-plugin.version>5.8.0.7211</sonar-maven-plugin.version>
         <!-- SonarQube Cloud analysis, run by the CI pipeline (./mvnw sonar:sonar after verify).
              The JaCoCo report is read from its default location, target/site/jacoco/jacoco.xml. -->
