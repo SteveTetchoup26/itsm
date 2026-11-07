@@ -58,3 +58,41 @@ sql ITSM_APP@//localhost:1521/FREEPDB1
 docker compose down -v   # supprime aussi le volume : toutes les données sont perdues
 docker compose up -d     # nouvelle base, scripts d'initialisation rejoués
 ```
+
+## Production : Caddy, frontend et backend
+
+[`compose.prod.yml`](compose.prod.yml) décrit la pile de la VM ; la base est l'Autonomous
+Database ([deploy/adb](../adb/README.md)), pas un conteneur.
+
+```
+Internet ──HTTPS──> caddy (80, 443) ──┬── /api/*  ──> backend:8080  (image itsm-backend)
+                                      └── le reste ──> frontend:8080 (image itsm-frontend)
+```
+
+- **Caddy** ([`Caddyfile`](Caddyfile)) est le seul conteneur exposé : il obtient et renouvelle
+  le certificat Let's Encrypt du domaine `ITSM_DOMAIN`, redirige HTTP vers HTTPS, ajoute les
+  en-têtes de sécurité et ne transmet au backend que `/api/*` (Actuator n'est pas joignable
+  depuis Internet). Les certificats sont conservés dans le volume `caddy-data` : le perdre
+  oblige à les redemander, et Let's Encrypt limite le nombre de demandes.
+- **Images** : celles publiées par le pipeline sur GHCR. Le pipeline ne reconstruit une image
+  que si son dossier a changé : le backend et le frontend ont donc chacun leur étiquette
+  (`ITSM_BACKEND_TAG`, `ITSM_FRONTEND_TAG`).
+- **Mémoire** (budget du cahier technique) : Caddy 64 Mo, frontend 64 Mo, backend 1 Go (tas à
+  70 %). Mesuré : backend environ 290 Mo au repos, Caddy 16 Mo, frontend 27 Mo.
+- **Configuration** : `.env.prod` (jamais versionné), à partir de
+  [`.env.prod.example`](.env.prod.example) ; mots de passe de la base de production.
+
+Lancement (sur la VM, en I0-11 par le pipeline) :
+
+```bash
+docker compose -f compose.prod.yml --env-file .env.prod up -d
+```
+
+Test sur le poste, avec `ITSM_DOMAIN=localhost` : Caddy utilise alors sa propre autorité de
+certification locale (`curl -k`). Vérifié le 2026-11-07 contre l'Autonomous Database : HTTP
+redirigé (308), `/api/v1/system/info` répond (`database UP`), `/` sert Angular,
+`/actuator/health` n'atteint pas le backend, en-têtes HSTS, `nosniff` et `Referrer-Policy`
+présents, en-tête `Server` supprimé.
+
+À faire quand la VM existera : faire pointer le sous-domaine DuckDNS vers son IP publique,
+puis démarrer la pile avec le vrai domaine (critères 1 et 2 de l'issue #21).
