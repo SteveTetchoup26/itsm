@@ -2,7 +2,7 @@
 
 # ---- Build stage: runs once, on the build machine's own architecture ($BUILDPLATFORM).
 # A jar is the same on every architecture: compiling under arm64 emulation would only be slower.
-FROM --platform=$BUILDPLATFORM eclipse-temurin:25.0.4.1_1-jdk-noble AS build
+FROM --platform=$BUILDPLATFORM eclipse-temurin:25.0.5_8-jdk-noble AS build
 WORKDIR /src
 
 # Dependencies first: this layer is reused as long as pom.xml does not change.
@@ -17,7 +17,7 @@ RUN --mount=type=cache,target=/root/.m2 ./mvnw --batch-mode --no-transfer-progre
     && java -Djarmode=tools -jar application.jar extract --layers --destination extracted
 
 # ---- Runtime stage: built for each target architecture (amd64, arm64).
-FROM eclipse-temurin:25.0.4.1_1-jre-noble
+FROM eclipse-temurin:25.0.5_8-jre-noble
 RUN groupadd --system --gid 10001 app \
     && useradd --system --uid 10001 --gid app --no-create-home app
 WORKDIR /application
