@@ -1,0 +1,43 @@
+# Release (ADR-002, rule 7): pushing a version tag (v0.1.0) adds this version as a tag to the
+# images already published for the tagged commit (sha-<commit>), without rebuilding them, and
+# creates the GitHub release. What is released is exactly what was tested and deployed.
+name: Release
+
+on:
+  push:
+    tags: ["v*.*.*"]
+
+permissions:
+  contents: read
+
+jobs:
+  release:
+    name: Release ${{ github.ref_name }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write # GitHub release
+      packages: write # version tag on the images
+    steps:
+      - uses: docker/login-action@81c6f93d4bc991e510b342a00b419b3bb4efc5c6 # v4.7.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
+      - name: Tag the published images with the version
+        env:
+          VERSION: ${{ github.ref_name }}
+        run: |
+          sha="sha-${GITHUB_SHA::7}"
+          for component in backend frontend; do
+            image="ghcr.io/stevetetchoup26/itsm-$component"
+            # Copies the multi-architecture index under a second name; fails if the commit has no image.
+            docker buildx imagetools create --tag "$image:$VERSION" "$image:$sha"
+            echo "$image:$VERSION -> $sha"
+          done
+      - name: GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ github.ref_name }}
+        run: gh release create "$VERSION" --repo "$GITHUB_REPOSITORY" --title "$VERSION" --generate-notes --verify-tag

@@ -71,6 +71,26 @@ Réglages de l'environnement `production` :
 | `ITSM_DB_URL` | secret | URL JDBC de `itsm_tp` (contient l'identifiant de la base) |
 | `ITSM_OWNER_PASSWORD`, `ITSM_APP_PASSWORD` | secrets | comptes de la base de production |
 
+## Livraison d'une version (fin d'incrément)
+
+Numérotation SemVer 0.x (ADR-002) : `v0.0.1` en fin de I0, puis `v0.<n>.0` en fin de chaque
+incrément. Pendant l'incrément, `backend/pom.xml` et `frontend/package.json` portent la version
+visée avec le suffixe `-SNAPSHOT` (par exemple `0.0.1-SNAPSHOT`).
+
+1. PR `chore(release): 0.0.1` : retirer `-SNAPSHOT` des deux fichiers (`package-lock.json`
+   compris) ; fusion, déploiement automatique, tests de fumée verts.
+2. Étiquette sur ce commit de fusion, poussée par le développeur :
+
+   ```bash
+   git switch main && git pull
+   git tag -a v0.0.1 -m "v0.0.1: walking skeleton" && git push origin v0.0.1
+   ```
+
+3. Le workflow `release.yml` ajoute l'étiquette `v0.0.1` aux images déjà publiées pour ce
+   commit (`docker buildx imagetools create`, sans reconstruction : on livre exactement ce qui
+   a été testé et déployé) et crée la *release* GitHub avec les notes générées.
+4. PR suivante : passer à la version visée par l'incrément suivant (`0.1.0-SNAPSHOT`).
+
 ## Protection de `main`
 
 Ruleset `protect-main` : Pull Request obligatoire (fusion par squash), historique linéaire, pas de
