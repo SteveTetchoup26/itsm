@@ -64,7 +64,8 @@ Résultat attendu : les deux comptes `OPEN`, profil `ITSM_SERVICE_PROFILE`, tabl
 | Administration | `SYSDBA`, conteneur `FREEPDB1` | utilisateur `ADMIN`, déjà dans la PDB ; pas de `SYSDBA` | script de comptes distinct (pas de `ALTER SESSION SET CONTAINER`) |
 | Tablespace des données | `USERS` | `DATA` (`USERS` n'existe pas) | seule ligne différente dans la création de `ITSM_OWNER` ; les migrations ne nomment jamais de tablespace |
 | Mots de passe | libres | `CLOUD_VERIFY_FUNCTION` : 12 à 30 caractères, majuscule, minuscule, chiffre, sans le nom du compte | mots de passe de production générés à part |
-| Expiration des mots de passe | profil `DEFAULT` de l'image | profil `ITSM_SERVICE_PROFILE` : `PASSWORD_LIFE_TIME UNLIMITED` | jamais d'expiration subie ; rotation volontaire |
+| Expiration des mots de passe | profil `DEFAULT` de l'image | `DEFAULT` : 360 jours ; profil `ITSM_SERVICE_PROFILE` : `PASSWORD_LIFE_TIME UNLIMITED` | jamais d'expiration subie ; rotation volontaire |
+| Verrouillage | profil `DEFAULT` de l'image | `DEFAULT` : 10 échecs, verrou d'**1 jour** ; `ITSM_SERVICE_PROFILE` : 10 échecs, verrou de **5 minutes** (`5/1440`) | voir « Compte verrouillé » |
 | Connexion | TCP en clair, port publié sur `127.0.0.1` | TCPS (TLS) port 1521, `ssl_server_dn_match=yes`, ACL par IP | seule `ITSM_DB_URL` change |
 | Sessions | sans limite pratique | **30 sessions simultanées** | taille du pool Hikari à fixer en production (I0-11) |
 | Inactivité | aucune | arrêt après **7 jours** sans connexion, suppression possible après **90 jours** arrêtée | se connecter chaque semaine tant que l'application n'est pas déployée |
@@ -72,6 +73,25 @@ Résultat attendu : les deux comptes `OPEN`, profil `ITSM_SERVICE_PROFILE`, tabl
 
 Vérifié le 2026-11-07 : le backend démarre contre la base en ligne, Flyway applique `V1` et la
 vue `R__` avec `ITSM_OWNER`, l'application répond avec `ITSM_APP` (`readiness` `UP`).
+
+## Compte verrouillé (`ORA-28000`)
+
+Vécu le 2026-11-07 : un mot de passe erroné et `restart: unless-stopped` font redémarrer le
+backend en boucle ; chaque démarrage est un échec de connexion de Flyway (`ITSM_OWNER`), et le
+compte est verrouillé au dixième (`LOCKED(TIMED)`). Le redémarrage automatique se comporte
+alors comme une attaque par force brute contre sa propre base.
+
+```sql
+-- en ADMIN
+SELECT USERNAME, ACCOUNT_STATUS, LOCK_DATE FROM DBA_USERS WHERE USERNAME IN ('ITSM_OWNER', 'ITSM_APP');
+ALTER USER ITSM_OWNER ACCOUNT UNLOCK;
+```
+
+Corriger d'abord la cause (mot de passe, URL), sinon le compte se reverrouille. Depuis, le
+verrou ne dure que 5 minutes, et `deploy.sh` arrête le backend si même la version précédente
+ne démarre pas, au lieu de le laisser redémarrer en boucle.
+
+Profil déjà créé (base existante) : `ALTER PROFILE ITSM_SERVICE_PROFILE LIMIT PASSWORD_LOCK_TIME 5/1440;`
 
 ## À faire quand la VM existera (I0-07)
 

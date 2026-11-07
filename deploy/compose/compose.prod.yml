@@ -1,8 +1,9 @@
 # Production stack on the VM: Caddy (HTTPS) in front of the frontend and the backend.
 # The database is the Autonomous Database (deploy/adb), not a container.
-# Usage, from the directory holding this file, the Caddyfile and .env.prod:
-#   docker compose -f compose.prod.yml --env-file .env.prod up -d
-# Memory limits: VM budget of the technical specification (§5.4).
+# Usage, from the directory holding this file, the Caddyfile and the two env files:
+#   docker compose -f compose.prod.yml --env-file .env.prod --env-file .env.tag up -d --wait
+# .env.prod: settings and secrets (written by the deployment job); .env.tag: ITSM_TAG, the
+# version deployed (deploy.sh). Memory limits: VM budget of the technical specification (§5.4).
 
 name: itsm-prod
 
@@ -22,15 +23,26 @@ services:
       - caddy-data:/data
       - caddy-config:/config
     mem_limit: 64m
-    depends_on: [frontend, backend]
+    # No traffic is sent to the application before it is ready (no 502 at startup).
+    depends_on:
+      frontend:
+        condition: service_healthy
+      backend:
+        condition: service_healthy
 
   frontend:
-    image: ghcr.io/stevetetchoup26/itsm-frontend:${ITSM_FRONTEND_TAG:?ITSM_FRONTEND_TAG must be set}
+    image: ghcr.io/stevetetchoup26/itsm-frontend:${ITSM_TAG:?ITSM_TAG must be set}
     restart: unless-stopped
     mem_limit: 64m
+    healthcheck:
+      # BusyBox wget is part of the Alpine image.
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1:8080/"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
 
   backend:
-    image: ghcr.io/stevetetchoup26/itsm-backend:${ITSM_BACKEND_TAG:?ITSM_BACKEND_TAG must be set}
+    image: ghcr.io/stevetetchoup26/itsm-backend:${ITSM_TAG:?ITSM_TAG must be set}
     restart: unless-stopped
     environment:
       ITSM_DB_URL: ${ITSM_DB_URL:?ITSM_DB_URL must be set}
@@ -40,6 +52,22 @@ services:
       SPRING_DATASOURCE_HIKARI_MAXIMUM_POOL_SIZE: "10"
     # The image sets the heap to 70 % of this limit.
     mem_limit: 1g
+    healthcheck:
+      # No curl or wget in the image: a minimal HTTP request with Bash's /dev/tcp.
+      # Readiness is UP only when the database answers (503 otherwise).
+      test:
+        - CMD
+        - bash
+        - -c
+        - >-
+          exec 3<>/dev/tcp/127.0.0.1/8080
+          && printf 'GET /actuator/health/readiness HTTP/1.0\r\nHost: localhost\r\n\r\n' >&3
+          && grep -q '"status":"UP"' <&3
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      # Spring Boot and Flyway need some time; failures during this period do not count.
+      start_period: 60s
 
 volumes:
   caddy-data:

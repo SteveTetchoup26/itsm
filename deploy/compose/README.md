@@ -74,21 +74,39 @@ Internet ──HTTPS──> caddy (80, 443) ──┬── /api/*  ──> back
   en-têtes de sécurité et ne transmet au backend que `/api/*` (Actuator n'est pas joignable
   depuis Internet). Les certificats sont conservés dans le volume `caddy-data` : le perdre
   oblige à les redemander, et Let's Encrypt limite le nombre de demandes.
-- **Images** : celles publiées par le pipeline sur GHCR. Le pipeline ne reconstruit une image
-  que si son dossier a changé : le backend et le frontend ont donc chacun leur étiquette
-  (`ITSM_BACKEND_TAG`, `ITSM_FRONTEND_TAG`).
+- **Images** : celles publiées par le pipeline sur GHCR. Sur `main`, les deux images sont
+  reconstruites dès que l'une change : une fusion = une version `sha-<commit>` pour toute
+  l'application (`ITSM_TAG`), déployée et restaurée d'un bloc.
+- **Contrôles de santé** : le backend n'est `healthy` que lorsque
+  `/actuator/health/readiness` est `UP` (base comprise). L'image n'a ni `curl` ni `wget` : la
+  requête HTTP est faite par Bash (`/dev/tcp`). Le frontend est testé avec le `wget` de BusyBox.
+  Caddy ne démarre qu'une fois les deux `healthy` (plus de 502 au démarrage).
 - **Mémoire** (budget du cahier technique) : Caddy 64 Mo, frontend 64 Mo, backend 1 Go (tas à
   70 %). Mesuré : backend environ 290 Mo au repos, Caddy 16 Mo, frontend 27 Mo.
 - **Configuration** : `.env.prod` (jamais versionné), à partir de
   [`.env.prod.example`](.env.prod.example) ; mots de passe de la base de production.
 
-Lancement (sur la VM, en I0-11 par le pipeline) :
+Déploiement : [`deploy.sh`](deploy.sh), lancé sur la VM (dans `/opt/itsm`) par le job `deploy`
+du pipeline (voir [le pipeline](../../docs/pipeline-ci.md)) :
 
 ```bash
-docker compose -f compose.prod.yml --env-file .env.prod up -d
+./deploy.sh sha-1a2b3c4   # télécharge, démarre, attend "healthy" ; sinon revient seul à la version précédente
+./deploy.sh --rollback    # revient à la version précédente (tests de fumée en échec)
 ```
 
-Test sur le poste, avec `ITSM_DOMAIN=localhost` : Caddy utilise alors sa propre autorité de
+- `.env.tag` contient la version en service, `.env.tag.previous` la précédente.
+- Images téléchargées **avant** tout changement : une image introuvable ne touche à rien.
+- Si même la version précédente ne démarre pas (le plus souvent : réglage de base erroné), le
+  backend est **arrêté** au lieu de redémarrer en boucle (chaque redémarrage serait un échec de
+  connexion, et le compte de la base finit verrouillé : voir [deploy/adb](../adb/README.md)).
+- Le retour arrière restaure les images, pas le schéma : une migration Flyway doit rester
+  compatible avec la version précédente de l'application.
+- Coupure d'une dizaine de secondes pendant la recréation du backend : un déploiement sans
+  coupure demande deux instances (Kubernetes, I6).
+
+Test sur le poste, avec `ITSM_DOMAIN=localhost` (`deploy.sh` vérifié le 2026-11-07 : premier
+déploiement, mise à jour, retour arrière, étiquette invalide refusée, image introuvable sans
+effet) : Caddy utilise alors sa propre autorité de
 certification locale (`curl -k`). Vérifié le 2026-11-07 contre l'Autonomous Database : HTTP
 redirigé (308), `/api/v1/system/info` répond (`database UP`), `/` sert Angular,
 `/actuator/health` n'atteint pas le backend, en-têtes HSTS, `nosniff` et `Referrer-Policy`

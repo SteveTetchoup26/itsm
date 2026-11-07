@@ -12,7 +12,8 @@ Pull Request et sur chaque push dans `main`.
 | `frontend` | `frontend/` ou le workflow modifiés | `npm ci --ignore-scripts`, Prettier, ESLint, Vitest avec couverture, build, puis analyse SonarQube Cloud |
 | `secrets` | toujours | Gitleaks sur les commits de la PR (ou du push) |
 | `codeql` | toujours | CodeQL pour Java, TypeScript et les workflows GitHub Actions ; alertes dans l'onglet Security |
-| `images` | backend ou frontend modifiés, tests au vert | une image par composant : construction amd64 analysée par Trivy (bloquant sur les failles critiques corrigeables), construction amd64 et arm64, publiée sur GHCR depuis `main` seulement |
+| `images` | backend ou frontend modifiés, tests au vert (sur `main` : les deux images dès que l'une change) | une image par composant : construction amd64 analysée par Trivy (bloquant sur les failles critiques corrigeables), construction amd64 et arm64, publiée sur GHCR depuis `main` seulement |
+| `deploy` | push sur `main`, images publiées, variable `ITSM_DEPLOY_ENABLED` à `true` | déploiement sur la VM par Tailscale et SSH, tests de fumée depuis Internet, retour arrière en cas d'échec (voir plus bas) |
 | `ci` | toujours (`if: always()`) | échoue si un job a échoué ou a été annulé ; un job sauté compte comme réussi |
 
 Un seul workflow, qui démarre toujours : un filtre `paths` au niveau du workflow laisserait une
@@ -22,7 +23,7 @@ vérification obligatoire en attente pour toujours sur les PR qui ne touchent pa
 
 | Image | Dockerfile | Base d'exécution | Utilisateur | Port |
 |---|---|---|---|---|
-| `ghcr.io/stevetetchoup26/itsm-backend` | `backend/Dockerfile` | `eclipse-temurin:25.0.4.1_1-jre-noble` | 10001 | 8080 |
+| `ghcr.io/stevetetchoup26/itsm-backend` | `backend/Dockerfile` | `eclipse-temurin:25.0.5_8-jre-noble` | 10001 | 8080 |
 | `ghcr.io/stevetetchoup26/itsm-frontend` | `frontend/Dockerfile` | `nginxinc/nginx-unprivileged:1.30.6-alpine` | 101 | 8080 |
 
 - **Étiquette** : `sha-<commit court>` (ADR-002) ; une étiquette de version (`v0.0.1`) s'ajoutera aux livraisons.
@@ -40,6 +41,35 @@ vérification obligatoire en attente pour toujours sur les PR qui ne touchent pa
 - **Publication** : uniquement sur un push dans `main`, avec le jeton du pipeline
   (`packages: write`). Les PR construisent les deux architectures sans rien publier.
 - **Cache** des couches Docker dans le cache de GitHub Actions (`type=gha`), un par composant.
+
+## Déploiement continu
+
+Job `deploy`, environnement GitHub **`production`** (réservé à `main`), une exécution à la fois :
+
+1. rejoint le réseau privé Tailscale en nœud éphémère `tag:ci`, par fédération d'identité OIDC
+   (aucun secret Tailscale stocké ; voir [deploy/tailscale](../deploy/tailscale/README.md)) ;
+2. SSH vers `deploy@<VM>` avec la clé du pipeline ; l'empreinte de la VM est épinglée
+   (`known_hosts`, `StrictHostKeyChecking yes`) ;
+3. copie `compose.prod.yml`, `Caddyfile` et `deploy.sh` dans `/opt/itsm`, et écrit `.env.prod`
+   à partir des secrets, par l'entrée standard de SSH (jamais sur une ligne de commande) ;
+4. `deploy.sh sha-<commit>` : téléchargement, démarrage, attente de l'état `healthy`, retour
+   seul à la version précédente sinon ([deploy/compose](../deploy/compose/README.md)) ;
+5. tests de fumée depuis Internet : `https://<domaine>/api/v1/system/info` avec
+   `"database":"UP"`, et la page d'accueil ;
+6. en cas d'échec des tests de fumée : `deploy.sh --rollback`, et le job **échoue quand même**.
+
+Réglages de l'environnement `production` :
+
+| Nom | Type | Contenu |
+|---|---|---|
+| `ITSM_DEPLOY_ENABLED` | variable | `true` pour activer le job (absent tant que la VM n'existe pas) |
+| `VM_TAILNET_HOST` | variable | nom de la VM dans le réseau privé |
+| `VM_SSH_KNOWN_HOSTS` | variable | clé publique d'hôte de la VM (`ssh-keyscan`) |
+| `ITSM_DOMAIN` | variable | domaine DuckDNS |
+| `TS_OAUTH_CLIENT_ID`, `TS_AUDIENCE` | variables | identité fédérée Tailscale (pas des secrets) |
+| `DEPLOY_SSH_KEY` | secret | clé privée SSH du pipeline (dédiée, utilisateur `deploy`) |
+| `ITSM_DB_URL` | secret | URL JDBC de `itsm_tp` (contient l'identifiant de la base) |
+| `ITSM_OWNER_PASSWORD`, `ITSM_APP_PASSWORD` | secrets | comptes de la base de production |
 
 ## Protection de `main`
 
