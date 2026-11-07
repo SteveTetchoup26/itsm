@@ -42,11 +42,17 @@ jobs:
               - 'frontend/**'
               - '.github/workflows/ci.yml'
       # JSON list of the components whose image must be rebuilt, e.g. ["backend","frontend"].
+      # On main, both images are rebuilt as soon as one changes: one merge = one version
+      # (sha-<commit>) for the whole application, deployed and rolled back as a unit.
       - id: images
         env:
           BACKEND: ${{ steps.filter.outputs.backend }}
           FRONTEND: ${{ steps.filter.outputs.frontend }}
+          ON_MAIN: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
         run: |
+          if [ "$ON_MAIN" = "true" ] && { [ "$BACKEND" = "true" ] || [ "$FRONTEND" = "true" ]; }; then
+            BACKEND=true FRONTEND=true
+          fi
           list=()
           [ "$BACKEND" = "true" ] && list+=('"backend"')
           [ "$FRONTEND" = "true" ] && list+=('"frontend"')
@@ -226,11 +232,88 @@ jobs:
           cache-from: type=gha,scope=${{ matrix.component }}
           cache-to: type=gha,mode=max,scope=${{ matrix.component }}
 
+  # Continuous deployment (ADR-012): main only, after both images are published.
+  # The VM is reached over Tailscale; nothing is exposed on the Internet but Caddy (80, 443).
+  # Disabled until the variable ITSM_DEPLOY_ENABLED is set to true in the environment.
+  deploy:
+    name: Deploy to production
+    needs: [changes, images]
+    if: >-
+      github.event_name == 'push' && github.ref == 'refs/heads/main'
+      && needs.images.result == 'success' && vars.ITSM_DEPLOY_ENABLED == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    # Only main can use this environment; the Tailscale identity accepts only this environment.
+    environment: production
+    # One deployment at a time, never cancelled halfway.
+    concurrency:
+      group: deploy-production
+      cancel-in-progress: false
+    permissions:
+      contents: read
+      id-token: write # GitHub OIDC token, exchanged for a Tailscale node (no stored secret)
+    env:
+      VM: deploy@${{ vars.VM_TAILNET_HOST }}
+      DOMAIN: ${{ vars.ITSM_DOMAIN }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          sparse-checkout: deploy/compose
+      - name: Join the tailnet (ephemeral node, tag:ci)
+        uses: tailscale/github-action@064b10558093f38325e838ddea35486bdc6b1d5c # v4.4.0
+        with:
+          oauth-client-id: ${{ vars.TS_OAUTH_CLIENT_ID }}
+          audience: ${{ vars.TS_AUDIENCE }}
+          tags: tag:ci
+      - name: SSH key and VM host key
+        env:
+          SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+          KNOWN_HOSTS: ${{ vars.VM_SSH_KNOWN_HOSTS }}
+        run: |
+          install -m 700 -d ~/.ssh
+          install -m 600 /dev/null ~/.ssh/id_ed25519
+          printf 'StrictHostKeyChecking yes\nBatchMode yes\n' > ~/.ssh/config
+          printf '%s\n' "$SSH_KEY" > ~/.ssh/id_ed25519
+          # The VM's identity is pinned: no connection to a host presenting another key.
+          printf '%s\n' "$KNOWN_HOSTS" > ~/.ssh/known_hosts
+      - name: Copy the stack and write its settings
+        env:
+          ITSM_DB_URL: ${{ secrets.ITSM_DB_URL }}
+          ITSM_OWNER_PASSWORD: ${{ secrets.ITSM_OWNER_PASSWORD }}
+          ITSM_APP_PASSWORD: ${{ secrets.ITSM_APP_PASSWORD }}
+        run: |
+          scp deploy/compose/compose.prod.yml deploy/compose/Caddyfile \
+            deploy/compose/deploy.sh "$VM:/opt/itsm/"
+          # Settings and secrets go through SSH's standard input: never on a command line.
+          printf 'ITSM_DOMAIN=%s\nITSM_DB_URL=%s\nITSM_OWNER_PASSWORD=%s\nITSM_APP_PASSWORD=%s\n' \
+            "$DOMAIN" "$ITSM_DB_URL" "$ITSM_OWNER_PASSWORD" "$ITSM_APP_PASSWORD" \
+            | ssh "$VM" 'umask 077 && cat > /opt/itsm/.env.prod'
+      - name: Deploy (rolls back by itself if the new version is not healthy)
+        # Same tag as the images job (docker/metadata-action, type=sha, short format: 7 characters).
+        run: |
+          # shellcheck disable=SC2029 # expanded here on purpose: the runner computes the tag
+          ssh "$VM" "/opt/itsm/deploy.sh sha-${GITHUB_SHA::7}"
+      - name: Smoke tests from the Internet
+        id: smoke
+        run: |
+          for _ in $(seq 1 12); do
+            if body=$(curl -fsS --max-time 10 "https://$DOMAIN/api/v1/system/info") \
+               && grep -q '"database":"UP"' <<<"$body" \
+               && curl -fsS --max-time 10 -o /dev/null "https://$DOMAIN/"; then
+              echo "OK: $body"; exit 0
+            fi
+            sleep 5
+          done
+          echo "Smoke tests failed"; exit 1
+      - name: Roll back after failed smoke tests
+        if: failure() && steps.smoke.outcome == 'failure'
+        run: ssh "$VM" "/opt/itsm/deploy.sh --rollback"
+
   # Single required check: fails if any job failed or was cancelled; skipped jobs count as success.
   ci:
     name: ci
     if: always()
-    needs: [changes, backend, frontend, secrets, codeql, images]
+    needs: [changes, backend, frontend, secrets, codeql, images, deploy]
     runs-on: ubuntu-latest
     steps:
       - name: Check job results

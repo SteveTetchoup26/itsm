@@ -11,10 +11,14 @@ WHENEVER SQLERROR EXIT SQL.SQLCODE ROLLBACK
 ACCEPT owner_password CHAR PROMPT 'ITSM_OWNER password: ' HIDE
 ACCEPT app_password   CHAR PROMPT 'ITSM_APP password: '   HIDE
 
--- Service accounts: the password never expires (an expired application password is an outage).
+-- Service accounts: the password never expires (an expired application password is an outage;
+-- DEFAULT expires it after 360 days). After 10 failed logins (inherited from DEFAULT) the account
+-- is locked for 5 minutes instead of 1 day: a restart loop with a wrong password must not stop
+-- the application for a whole day once the mistake is fixed.
 -- The other limits, including the CLOUD_VERIFY_FUNCTION complexity rules, come from DEFAULT.
 CREATE PROFILE ITSM_SERVICE_PROFILE LIMIT
-  PASSWORD_LIFE_TIME UNLIMITED;
+  PASSWORD_LIFE_TIME UNLIMITED
+  PASSWORD_LOCK_TIME 5/1440;
 
 -- Schema owner, used by Flyway only: can create objects in its own schema, nothing else.
 -- No USERS tablespace in Autonomous Database: user data goes to DATA.
