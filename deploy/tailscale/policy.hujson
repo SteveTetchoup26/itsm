@@ -1,0 +1,35 @@
+// Tailscale access policy of the ITSM tailnet (ADR-012).
+// Source of truth: this file. It replaces the whole policy in the admin console
+// (Access controls > JSON editor); the console rejects it if a test below fails.
+// Everything not granted here is denied.
+{
+	// Only the tailnet admins (the project owner) can apply these tags to a device.
+	"tagOwners": {
+		"tag:itsm-vm": ["autogroup:admin"],
+		"tag:ci":      ["autogroup:admin"],
+	},
+
+	"grants": [
+		// Deployment pipeline (ephemeral node, workload identity federation): SSH only.
+		{
+			"src": ["tag:ci"],
+			"dst": ["tag:itsm-vm"],
+			"ip":  ["tcp:22"],
+		},
+		// The owner's own devices (workstation): administration of the VM.
+		{
+			"src": ["autogroup:member"],
+			"dst": ["tag:itsm-vm"],
+			"ip":  ["*"],
+		},
+	],
+
+	// Checked by Tailscale on every save: a policy that breaks these rules is refused.
+	"tests": [
+		{
+			"src":    "tag:ci",
+			"accept": ["tag:itsm-vm:22"],
+			"deny":   ["tag:itsm-vm:443", "tag:itsm-vm:8080"],
+		},
+	],
+}

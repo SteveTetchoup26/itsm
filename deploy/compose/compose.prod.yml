@@ -1,0 +1,46 @@
+# Production stack on the VM: Caddy (HTTPS) in front of the frontend and the backend.
+# The database is the Autonomous Database (deploy/adb), not a container.
+# Usage, from the directory holding this file, the Caddyfile and .env.prod:
+#   docker compose -f compose.prod.yml --env-file .env.prod up -d
+# Memory limits: VM budget of the technical specification (§5.4).
+
+name: itsm-prod
+
+services:
+  caddy:
+    image: caddy:2.11.9-alpine
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp" # HTTP/3
+    environment:
+      ITSM_DOMAIN: ${ITSM_DOMAIN:?ITSM_DOMAIN must be set}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      # Certificates and ACME account: losing them means asking Let's Encrypt again (rate limited).
+      - caddy-data:/data
+      - caddy-config:/config
+    mem_limit: 64m
+    depends_on: [frontend, backend]
+
+  frontend:
+    image: ghcr.io/stevetetchoup26/itsm-frontend:${ITSM_FRONTEND_TAG:?ITSM_FRONTEND_TAG must be set}
+    restart: unless-stopped
+    mem_limit: 64m
+
+  backend:
+    image: ghcr.io/stevetetchoup26/itsm-backend:${ITSM_BACKEND_TAG:?ITSM_BACKEND_TAG must be set}
+    restart: unless-stopped
+    environment:
+      ITSM_DB_URL: ${ITSM_DB_URL:?ITSM_DB_URL must be set}
+      ITSM_OWNER_PASSWORD: ${ITSM_OWNER_PASSWORD:?ITSM_OWNER_PASSWORD must be set}
+      ITSM_APP_PASSWORD: ${ITSM_APP_PASSWORD:?ITSM_APP_PASSWORD must be set}
+      # Autonomous Database Always Free: 30 sessions at most (ADR-017, deploy/adb).
+      SPRING_DATASOURCE_HIKARI_MAXIMUM_POOL_SIZE: "10"
+    # The image sets the heap to 70 % of this limit.
+    mem_limit: 1g
+
+volumes:
+  caddy-data:
+  caddy-config:
