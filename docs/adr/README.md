@@ -24,3 +24,4 @@ Modèle : [0000-template.md](0000-template.md)
 | ADR-014 | Envoi réel d'e-mails en ligne | I4 | À rédiger |
 | ADR-015 | Observabilité : pile locale et Grafana Cloud en ligne | I5 | À rédiger |
 | ADR-016 | Distribution Kubernetes et packaging Helm | I6 | À rédiger |
+| ADR-017 | Connexion à l'Autonomous Database en TLS sans wallet, avec liste d'accès | I0 | Accepté |
