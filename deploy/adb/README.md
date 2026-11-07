@@ -19,7 +19,7 @@ environnements, seule l'URL de connexion change.
 | Network access | *Secure access from allowed IPs and VCNs only* : IP du poste, puis IP de la VM |
 | Require mutual TLS (mTLS) | **décoché** : connexion TLS sans wallet (voir plus bas) |
 
-## Connexion : TLS sans wallet
+## Connexion : TLS sans wallet ([ADR-017](../../docs/adr/0017-connexion-tls-autonomous-database.md))
 
 La base Always Free est forcément joignable depuis Internet (pas de point d'accès privé).
 Choix retenu : **TLS** (le client authentifie le serveur, tout est chiffré) **avec une liste
