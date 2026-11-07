@@ -1,0 +1,25 @@
+# Reverse proxy and HTTPS in front of the application (production, and local test).
+# ITSM_DOMAIN: the DuckDNS name in production (certificate from Let's Encrypt),
+# "localhost" for a local test (certificate from Caddy's own local authority).
+# HTTP is redirected to HTTPS automatically for a named site.
+
+{$ITSM_DOMAIN} {
+	encode zstd gzip
+
+	header {
+		Strict-Transport-Security "max-age=31536000"
+		X-Content-Type-Options "nosniff"
+		Referrer-Policy "strict-origin-when-cross-origin"
+		-Server
+	}
+
+	# API only: Actuator (/actuator/*) stays reachable inside the Docker network, not from Internet.
+	handle /api/* {
+		reverse_proxy backend:8080
+	}
+
+	# Everything else: the Angular application (Nginx falls back to index.html).
+	handle {
+		reverse_proxy frontend:8080
+	}
+}
