@@ -26,5 +26,40 @@ services:
       retries: 10
       start_period: 30s
 
+  keycloak:
+    image: quay.io/keycloak/keycloak:26.8.2
+    # Development mode: HTTP, embedded database. No volume on purpose: the realm file is the single
+    # source of truth, imported again each time the container is created (ADR-007).
+    command: ["start-dev", "--import-realm"]
+    environment:
+      # Administrator of the master realm (administration console), created on first startup.
+      KC_BOOTSTRAP_ADMIN_USERNAME: admin
+      KC_BOOTSTRAP_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD:?KEYCLOAK_ADMIN_PASSWORD must be set in .env}
+      # Replaces ${ITSM_TEST_USER_PASSWORD} in the realm file: no password in Git.
+      ITSM_TEST_USER_PASSWORD: ${ITSM_TEST_USER_PASSWORD:?ITSM_TEST_USER_PASSWORD must be set in .env}
+      KC_HEALTH_ENABLED: "true"
+    ports:
+      # Loopback only. 8080 is the backend's port on the host.
+      - "127.0.0.1:${KEYCLOAK_PORT:-8081}:8080"
+    volumes:
+      - ./keycloak/realm:/opt/keycloak/data/import:ro
+    # The JVM heap is sized to 70 % of this limit by the image.
+    mem_limit: 768m
+    healthcheck:
+      # No curl or wget in the image: a minimal HTTP request with Bash's /dev/tcp to the
+      # management port (9000, not published).
+      test:
+        - CMD
+        - bash
+        - -c
+        - >-
+          exec 3<>/dev/tcp/127.0.0.1/9000
+          && printf 'GET /health/ready HTTP/1.0\r\nHost: localhost\r\n\r\n' >&3
+          && while read -r line <&3; do [[ $$line == *'"UP"'* ]] && exit 0; done; exit 1
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 60s
+
 volumes:
   oracle-data:

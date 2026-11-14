@@ -1,0 +1,96 @@
+{
+  "realm": "nordal",
+  "enabled": true,
+  "displayName": "Nordal Industries",
+  "sslRequired": "external",
+  "registrationAllowed": false,
+  "resetPasswordAllowed": false,
+  "loginWithEmailAllowed": true,
+  "bruteForceProtected": true,
+  "accessTokenLifespan": 300,
+  "internationalizationEnabled": true,
+  "supportedLocales": ["fr", "en"],
+  "defaultLocale": "fr",
+  "roles": {
+    "realm": [
+      { "name": "USER", "description": "Any employee: declares and follows their own tickets" },
+      { "name": "TECHNICIAN", "description": "Member of support groups: handles their tickets" },
+      { "name": "MANAGER", "description": "Head of support groups: reassigns, reads the dashboard" },
+      { "name": "ADMIN", "description": "Functional administrator: manages reference data" }
+    ]
+  },
+  "clients": [
+    {
+      "clientId": "itsm-frontend",
+      "name": "ITSM web application",
+      "description": "Angular single-page application: public client, Authorization Code with PKCE",
+      "enabled": true,
+      "publicClient": true,
+      "standardFlowEnabled": true,
+      "implicitFlowEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "serviceAccountsEnabled": false,
+      "rootUrl": "http://localhost:4200",
+      "redirectUris": ["http://localhost:4200/*"],
+      "webOrigins": ["http://localhost:4200"],
+      "attributes": {
+        "pkce.code.challenge.method": "S256",
+        "post.logout.redirect.uris": "http://localhost:4200/*"
+      },
+      "protocolMappers": [
+        {
+          "name": "itsm-backend-audience",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-audience-mapper",
+          "config": {
+            "included.custom.audience": "itsm-backend",
+            "access.token.claim": "true",
+            "id.token.claim": "false"
+          }
+        }
+      ]
+    }
+  ],
+  "users": [
+    {
+      "username": "sophie",
+      "firstName": "Sophie",
+      "lastName": "Martin",
+      "email": "sophie.martin@nordal.example",
+      "emailVerified": true,
+      "enabled": true,
+      "realmRoles": ["USER"],
+      "credentials": [{ "type": "password", "value": "${ITSM_TEST_USER_PASSWORD}", "temporary": false }]
+    },
+    {
+      "username": "karim",
+      "firstName": "Karim",
+      "lastName": "Benali",
+      "email": "karim.benali@nordal.example",
+      "emailVerified": true,
+      "enabled": true,
+      "realmRoles": ["USER", "TECHNICIAN"],
+      "credentials": [{ "type": "password", "value": "${ITSM_TEST_USER_PASSWORD}", "temporary": false }]
+    },
+    {
+      "username": "julie",
+      "firstName": "Julie",
+      "lastName": "Moreau",
+      "email": "julie.moreau@nordal.example",
+      "emailVerified": true,
+      "enabled": true,
+      "realmRoles": ["USER", "MANAGER"],
+      "credentials": [{ "type": "password", "value": "${ITSM_TEST_USER_PASSWORD}", "temporary": false }]
+    },
+    {
+      "username": "marc",
+      "firstName": "Marc",
+      "lastName": "Dubois",
+      "email": "marc.dubois@nordal.example",
+      "emailVerified": true,
+      "enabled": true,
+      "realmRoles": ["USER", "ADMIN"],
+      "credentials": [{ "type": "password", "value": "${ITSM_TEST_USER_PASSWORD}", "temporary": false }]
+    }
+  ]
+}

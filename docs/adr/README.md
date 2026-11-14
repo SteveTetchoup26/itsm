@@ -14,7 +14,7 @@ Modèle : [0000-template.md](0000-template.md)
 | ADR-004 | Hébergement en ligne : Oracle Cloud Always Free et Autonomous Database | I0 | Accepté |
 | ADR-005 | Outil de migration de schéma : Flyway | I0 | Accepté |
 | ADR-006 | Monolithe modulaire et architecture hexagonale | I1 | Accepté |
-| ADR-007 | Délégation de l'identité à Keycloak | I1 | À rédiger |
+| ADR-007 | Délégation de l'identité à Keycloak | I1 | Accepté |
 | ADR-008 | Conventions d'API : actions métier explicites, Problem Details | I1 | À rédiger |
 | ADR-009 | Stockage des pièces jointes | I2 | À rédiger |
 | ADR-010 | Historique d'audit : application ou trigger | I2 | À rédiger |
