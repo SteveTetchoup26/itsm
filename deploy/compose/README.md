@@ -1,6 +1,7 @@
 # Environnement local (Docker Compose)
 
-Services nécessaires au développement sur le poste. Pour l'instant : Oracle AI Database Free 26ai.
+Services nécessaires au développement sur le poste : Oracle AI Database Free 26ai et Keycloak
+(fournisseur d'identité, [ADR-007](../../docs/adr/0007-identite-keycloak.md)).
 
 ## Premier démarrage
 
@@ -42,6 +43,52 @@ docker compose logs oracle | grep -E "ITSM accounts|ORA-"
 sql ITSM_OWNER@//localhost:1521/FREEPDB1
 sql ITSM_APP@//localhost:1521/FREEPDB1
 ```
+
+## Keycloak
+
+Keycloak démarre en mode développement et importe le realm `nordal` depuis
+`keycloak/realm/nordal-realm.json`. Il n'a **pas de volume** : le realm est réimporté à chaque
+création du conteneur, le fichier versionné est la seule source de vérité.
+
+| Élément | Valeur |
+|---|---|
+| Console d'administration | <http://localhost:8081> (compte `admin`, `KEYCLOAK_ADMIN_PASSWORD` dans `.env`) |
+| Émetteur des jetons (*issuer*) | `http://localhost:8081/realms/nordal` |
+| Configuration OIDC | <http://localhost:8081/realms/nordal/.well-known/openid-configuration> |
+| Client du frontend | `itsm-frontend` : public, Authorization Code avec PKCE (`S256`), redirection vers `http://localhost:4200/*` |
+| Jeton d'accès | 5 minutes, audience `itsm-backend`, rôles dans `realm_access.roles` |
+
+Utilisateurs de test (les personas du cahier fonctionnel, §5.4). Ils partagent le mot de passe
+`ITSM_TEST_USER_PASSWORD` de `.env` : Keycloak remplace `${ITSM_TEST_USER_PASSWORD}` dans le
+fichier du realm au moment de l'import, aucun mot de passe n'est versionné.
+
+| Identifiant | Persona | Rôles |
+|---|---|---|
+| `sophie` | Sophie, comptable | `USER` |
+| `karim` | Karim, technicien N1 | `USER`, `TECHNICIAN` |
+| `julie` | Julie, manager du support | `USER`, `MANAGER` |
+| `marc` | Marc, administrateur fonctionnel | `USER`, `ADMIN` |
+
+Essayer une connexion sans le frontend : la console de compte de Keycloak,
+<http://localhost:8081/realms/nordal/account>.
+
+### Modifier le realm
+
+1. Faire la modification dans la console d'administration (realm `nordal`) et la tester.
+2. La reporter **à la main** dans `keycloak/realm/nordal-realm.json`. Pour retrouver le nom des
+   champs : *Realm settings*, *Action*, *Partial export*. Ne pas remplacer le fichier par
+   l'export complet : il contient des identifiants générés et des centaines de valeurs par
+   défaut, qui rendraient les revues illisibles.
+3. Recréer le conteneur pour vérifier que le fichier seul suffit :
+
+```bash
+docker compose up -d --force-recreate keycloak
+docker compose logs keycloak | grep -E "Realm 'nordal' imported|ERROR"
+```
+
+Une modification faite seulement dans la console est perdue à la recréation du conteneur. Il
+en va de même pour un changement de `ITSM_TEST_USER_PASSWORD` : il n'est pris en compte qu'à
+la recréation.
 
 ## Commandes courantes
 
