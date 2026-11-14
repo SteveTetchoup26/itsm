@@ -19,6 +19,7 @@
         <palantir-java-format.version>2.101.0</palantir-java-format.version>
         <jacoco-maven-plugin.version>0.8.16</jacoco-maven-plugin.version>
         <sonar-maven-plugin.version>5.8.0.7211</sonar-maven-plugin.version>
+        <spring-modulith.version>2.1.2</spring-modulith.version>
         <!-- SonarQube Cloud analysis, run by the CI pipeline (./mvnw sonar:sonar after verify).
              The JaCoCo report is read from its default location, target/site/jacoco/jacoco.xml. -->
         <sonar.organization>stevetetchoup26</sonar.organization>
@@ -28,6 +29,18 @@
         <!-- Empty by default; other plugins (JaCoCo) append to it. Required by @{argLine} below. -->
         <argLine/>
     </properties>
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <!-- Not managed by Spring Boot: the BOM aligns all Spring Modulith artifacts (ADR-006) -->
+                <groupId>org.springframework.modulith</groupId>
+                <artifactId>spring-modulith-bom</artifactId>
+                <version>${spring-modulith.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
     <dependencies>
         <dependency>
             <groupId>org.springframework.boot</groupId>
@@ -48,6 +61,11 @@
         <dependency>
             <groupId>org.flywaydb</groupId>
             <artifactId>flyway-database-oracle</artifactId>
+        </dependency>
+        <dependency>
+            <!-- Annotations only (@ApplicationModule): modules declare their allowed dependencies (ADR-006) -->
+            <groupId>org.springframework.modulith</groupId>
+            <artifactId>spring-modulith-api</artifactId>
         </dependency>
 
         <dependency>
@@ -83,6 +101,12 @@
         <dependency>
             <groupId>org.testcontainers</groupId>
             <artifactId>testcontainers-oracle-free</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <!-- Module boundary verification (ApplicationModules.verify), brings ArchUnit -->
+            <groupId>org.springframework.modulith</groupId>
+            <artifactId>spring-modulith-starter-test</artifactId>
             <scope>test</scope>
         </dependency>
     </dependencies>
@@ -150,6 +174,7 @@
                 <artifactId>maven-surefire-plugin</artifactId>
                 <configuration>
                     <!-- Mockito as a declared agent: dynamic self-attachment will be disallowed by future JDKs -->
+                    <!--suppress UnresolvedMavenProperty -->
                     <argLine>@{argLine} -javaagent:${org.mockito:mockito-core:jar}</argLine>
                 </configuration>
             </plugin>
@@ -159,6 +184,7 @@
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-failsafe-plugin</artifactId>
                 <configuration>
+                    <!--suppress UnresolvedMavenProperty -->
                     <argLine>@{argLine} -javaagent:${org.mockito:mockito-core:jar}</argLine>
                 </configuration>
             </plugin>
