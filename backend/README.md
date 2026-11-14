@@ -74,6 +74,27 @@ lire en local :
 ./mvnw spring-boot:run | jq -R -r 'fromjson? | "\(.log.level)\t\(.message)"'
 ```
 
+## Architecture
+
+Monolithe modulaire, architecture hexagonale dans les modules qui portent des règles métier
+([ADR-006](../docs/adr/0006-monolithe-modulaire-hexagonal.md)). Un module est un sous-paquetage
+direct de `fr.nordal.itsm` ; son `package-info.java` décrit son rôle et déclare les modules
+dont il a le droit de dépendre.
+
+| Module | Forme | Dépendances permises |
+|---|---|---|
+| `ticket` | hexagonale : `domain`, `application`, `adapter.in`, `adapter.out` | `referential`, `shared` |
+| `referential` | allégée : un paquetage, classes non `public` sauf l'API | `shared` |
+| `system` | allégée | aucune |
+| `shared` | types techniques communs, Java pur | aucune |
+
+Deux tests unitaires font échouer le build si ces règles sont violées :
+
+- `ModularityTest` (Spring Modulith) : aucun module n'utilise les sous-paquetages d'un autre,
+  ni un module qu'il n'a pas déclaré ; aucun cycle.
+- `HexagonalArchitectureTest` (ArchUnit) : `domain` et `shared` ne dépendent d'aucun framework ;
+  les dépendances pointent vers l'intérieur (`adapter` vers `application` vers `domain`).
+
 ## Tests
 
 | Type | Nom des classes | Lancé par | Besoin |
