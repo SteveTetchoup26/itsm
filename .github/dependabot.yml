@@ -27,6 +27,10 @@ updates:
       # Spring Boot fixes the versions of its ecosystem (ADR-003, principle 4): only its patches.
       - dependency-name: "org.springframework.boot:*"
         update-types: ["version-update:semver-major", "version-update:semver-minor"]
+      # Each Spring Modulith minor is built for one Spring Boot minor (2.1 for Boot 4.1, 2.2 for
+      # Boot 4.2): it moves with Spring Boot, in the same planned upgrade (ADR-003).
+      - dependency-name: "org.springframework.modulith:*"
+        update-types: ["version-update:semver-major", "version-update:semver-minor"]
       # Maven itself (wrapper): 3.9.x is fixed by ADR-003.
       - dependency-name: "org.apache.maven:apache-maven"
         update-types: ["version-update:semver-major", "version-update:semver-minor"]
