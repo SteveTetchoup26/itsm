@@ -75,6 +75,20 @@ class JwtAuthenticationTest {
     }
 
     @Test
+    void a_request_with_a_bearer_token_needs_no_csrf_token() {
+        String token = sign(KEYCLOAK_KEY, claims -> claims);
+
+        // 405: the request went through the security chain and reached Spring MVC (403 would be CSRF).
+        assertThat(mvc.post().uri("/api/v1/me").header(HttpHeaders.AUTHORIZATION, "Bearer " + token))
+                .hasStatus(HttpStatus.METHOD_NOT_ALLOWED);
+    }
+
+    @Test
+    void a_state_changing_request_without_bearer_token_still_needs_a_csrf_token() {
+        assertThat(mvc.post().uri("/api/v1/me")).hasStatus(HttpStatus.FORBIDDEN);
+    }
+
+    @Test
     void no_token_is_refused() {
         assertThat(mvc.get().uri("/api/v1/me")).hasStatus(HttpStatus.UNAUTHORIZED);
     }
