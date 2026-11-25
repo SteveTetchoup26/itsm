@@ -131,7 +131,8 @@ publie sa propre clé publique et signe ses jetons, valides ou piégés) ;
 | Intégration | `*IT` | `./mvnw verify` (failsafe, après `package`) | Docker |
 
 - Les tests d'intégration démarrent un Oracle jetable avec Testcontainers
-  (`gvenzl/oracle-free:23.26.3-slim-faststart`, même image qu'en local) et y exécutent le script
+  (même image qu'en local : `SystemInfoIT` la lit dans `deploy/compose/docker-compose.yml`, seul
+  endroit où sa version est écrite) et y exécutent le script
   d'initialisation de `deploy/compose/oracle/initdb/` : ils utilisent les mêmes comptes
   `ITSM_OWNER` et `ITSM_APP` que les autres environnements. La base locale n'a pas besoin de
   tourner, et aucune variable d'environnement n'est nécessaire.
