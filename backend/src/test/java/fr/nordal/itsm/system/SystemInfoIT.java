@@ -75,6 +75,19 @@ class SystemInfoIT {
     }
 
     @Test
+    void readiness_probe_needs_no_token() {
+        // Compose health checks and the deployment job call it without a user (I1-03).
+        var status = RestClient.create("http://localhost:" + port)
+                .get()
+                .uri("/actuator/health/readiness")
+                .retrieve()
+                .toBodilessEntity()
+                .getStatusCode();
+
+        assertThat(status.value()).isEqualTo(200);
+    }
+
+    @Test
     void application_account_cannot_modify_reference_data() {
         var update = applicationJdbcClient.sql("UPDATE APP_INFO SET INFO_VALUE = 'changed'");
 
