@@ -40,8 +40,12 @@ Toute modification de `proxy.conf.json` demande de redémarrer `npm start`.
 ## Image Docker
 
 `Dockerfile` multi-étapes : build Angular avec Node sur l'architecture de la machine, puis
-image d'exécution `nginxinc/nginx-unprivileged` (Nginx non root, utilisateur 101, port 8080, sans
-Node), avec les correctifs de sécurité d'Alpine (`apk upgrade`). `nginx.conf` renvoie
+image d'exécution `nginx` officielle (sans Node), avec les correctifs de sécurité d'Alpine
+(`apk upgrade`). Nginx y tourne **sans les droits root** (utilisateur 101, port 8080) : le
+`nginx.conf` complet remplace celui de l'image, sans directive `user`, avec le fichier PID et les
+fichiers temporaires dans `/tmp`, seul endroit où cet utilisateur peut écrire. L'image
+`nginxinc/nginx-unprivileged`, utilisée jusqu'en novembre 2026, publiait les correctifs de
+sécurité de nginx plusieurs semaines après l'image officielle. `nginx.conf` renvoie
 `index.html` pour toute route inconnue (application monopage), met en cache un an les fichiers
 JS et CSS (leur nom contient une empreinte) et jamais `index.html`. HTTPS, compression et
 routage de `/api` sont faits par Caddy devant (I0-10).

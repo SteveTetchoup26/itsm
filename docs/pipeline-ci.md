@@ -24,7 +24,7 @@ vérification obligatoire en attente pour toujours sur les PR qui ne touchent pa
 | Image | Dockerfile | Base d'exécution | Utilisateur | Port |
 |---|---|---|---|---|
 | `ghcr.io/stevetetchoup26/itsm-backend` | `backend/Dockerfile` | `eclipse-temurin:25.0.5_8-jre-noble` | 10001 | 8080 |
-| `ghcr.io/stevetetchoup26/itsm-frontend` | `frontend/Dockerfile` | `nginxinc/nginx-unprivileged:1.30.6-alpine` | 101 | 8080 |
+| `ghcr.io/stevetetchoup26/itsm-frontend` | `frontend/Dockerfile` | `nginx:1.30.7-alpine` | 101 | 8080 |
 
 - **Étiquette** : `sha-<commit court>` (ADR-002) ; une étiquette de version (`v0.0.1`) s'ajoutera aux livraisons.
 - **Deux architectures** sous un même nom : `linux/amd64` (poste, CI) et `linux/arm64` (VM Ampere,
