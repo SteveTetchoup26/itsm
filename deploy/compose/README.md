@@ -69,6 +69,11 @@ fichier du realm au moment de l'import, aucun mot de passe n'est versionné.
 | `julie` | Julie, manager du support | `USER`, `MANAGER` |
 | `marc` | Marc, administrateur fonctionnel | `USER`, `ADMIN` |
 
+Les identifiants (`sub` du jeton) sont **fixés** dans le fichier du realm
+(`00000000-0000-4000-8000-00000000000N`) : sinon Keycloak en générerait de nouveaux à chaque
+recréation du conteneur, et les tickets enregistrés en base ne seraient plus rattachés à leur
+demandeur.
+
 Essayer une connexion sans le frontend : la console de compte de Keycloak,
 <http://localhost:8081/realms/nordal/account>.
 

@@ -53,6 +53,7 @@
   ],
   "users": [
     {
+      "id": "00000000-0000-4000-8000-000000000001",
       "username": "sophie",
       "firstName": "Sophie",
       "lastName": "Martin",
@@ -63,6 +64,7 @@
       "credentials": [{ "type": "password", "value": "${ITSM_TEST_USER_PASSWORD}", "temporary": false }]
     },
     {
+      "id": "00000000-0000-4000-8000-000000000002",
       "username": "karim",
       "firstName": "Karim",
       "lastName": "Benali",
@@ -73,6 +75,7 @@
       "credentials": [{ "type": "password", "value": "${ITSM_TEST_USER_PASSWORD}", "temporary": false }]
     },
     {
+      "id": "00000000-0000-4000-8000-000000000003",
       "username": "julie",
       "firstName": "Julie",
       "lastName": "Moreau",
@@ -83,6 +86,7 @@
       "credentials": [{ "type": "password", "value": "${ITSM_TEST_USER_PASSWORD}", "temporary": false }]
     },
     {
+      "id": "00000000-0000-4000-8000-000000000004",
       "username": "marc",
       "firstName": "Marc",
       "lastName": "Dubois",

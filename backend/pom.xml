@@ -18,7 +18,7 @@
         <spotless-maven-plugin.version>3.11.0</spotless-maven-plugin.version>
         <palantir-java-format.version>2.101.0</palantir-java-format.version>
         <jacoco-maven-plugin.version>0.8.16</jacoco-maven-plugin.version>
-        <sonar-maven-plugin.version>5.8.0.7211</sonar-maven-plugin.version>
+        <sonar-maven-plugin.version>5.9.0.7382</sonar-maven-plugin.version>
         <spring-modulith.version>2.1.2</spring-modulith.version>
         <!-- SonarQube Cloud analysis, run by the CI pipeline (./mvnw sonar:sonar after verify).
              The JaCoCo report is read from its default location, target/site/jacoco/jacoco.xml. -->
@@ -55,6 +55,11 @@
             <artifactId>spring-boot-starter-jdbc</artifactId>
         </dependency>
         <dependency>
+            <!-- Verifies the JWT access tokens issued by Keycloak (ADR-007) -->
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-security-oauth2-resource-server</artifactId>
+        </dependency>
+        <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-webmvc</artifactId>
         </dependency>
@@ -86,6 +91,11 @@
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-jdbc-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-security-oauth2-resource-server-test</artifactId>
             <scope>test</scope>
         </dependency>
         <dependency>

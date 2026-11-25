@@ -95,6 +95,34 @@ Deux tests unitaires font échouer le build si ces règles sont violées :
 - `HexagonalArchitectureTest` (ArchUnit) : `domain` et `shared` ne dépendent d'aucun framework ;
   les dépendances pointent vers l'intérieur (`adapter` vers `application` vers `domain`).
 
+## Sécurité
+
+Le backend est un serveur de ressources OAuth2 ([ADR-007](../docs/adr/0007-identite-keycloak.md)) :
+chaque requête porte un jeton d'accès JWT émis par Keycloak (`Authorization: Bearer …`).
+
+- **Fermé par défaut** : tout exige un jeton, sauf `/actuator/health/**` et
+  `GET /api/v1/system/info` (sondes et tests de fumée). Sans jeton valide : 401.
+- **Contrôles** : signature (clé publique de Keycloak, téléchargée à la première requête et non
+  au démarrage), émetteur (`iss`), audience (`itsm-backend`), expiration. Aucun appel à Keycloak
+  par requête ; pas de session HTTP.
+- **Rôles** : `realm_access.roles` du jeton, convertis en autorités `ROLE_USER`, `ROLE_TECHNICIAN`…
+  Les rôles propres à Keycloak (`offline_access`…) sont ignorés.
+- **Utilisateur courant** : les modules métier utilisent le port `shared.CurrentUserProvider`,
+  jamais Spring Security (module `security`). `GET /api/v1/me` renvoie l'utilisateur du jeton.
+
+| Variable | Défaut | Rôle |
+|---|---|---|
+| `ITSM_OIDC_ISSUER` | `http://localhost:8081/realms/nordal` | Émetteur attendu dans le jeton |
+| `ITSM_OIDC_JWKS` | `<issuer>/protocol/openid-connect/certs` | Adresse des clés publiques, si Keycloak est joint par une autre adresse que l'émetteur (réseau de conteneurs) |
+
+Essayer en local (Keycloak démarré, voir `deploy/compose/README.md`) : se connecter avec un
+persona dans le frontend (I1-10), ou appeler `/api/v1/me` avec un jeton obtenu par le flux du
+navigateur. Le client `itsm-frontend` n'accepte ni le flux par mot de passe ni l'absence de PKCE.
+
+Tests : `JwtAuthenticationTest` vérifie la vraie chaîne de sécurité sans Keycloak (le test
+publie sa propre clé publique et signe ses jetons, valides ou piégés) ;
+`KeycloakRealmRoleConverterTest` vérifie la lecture des rôles.
+
 ## Tests
 
 | Type | Nom des classes | Lancé par | Besoin |
@@ -103,7 +131,8 @@ Deux tests unitaires font échouer le build si ces règles sont violées :
 | Intégration | `*IT` | `./mvnw verify` (failsafe, après `package`) | Docker |
 
 - Les tests d'intégration démarrent un Oracle jetable avec Testcontainers
-  (`gvenzl/oracle-free:23.26.3-slim-faststart`, même image qu'en local) et y exécutent le script
+  (même image qu'en local : `SystemInfoIT` la lit dans `deploy/compose/docker-compose.yml`, seul
+  endroit où sa version est écrite) et y exécutent le script
   d'initialisation de `deploy/compose/oracle/initdb/` : ils utilisent les mêmes comptes
   `ITSM_OWNER` et `ITSM_APP` que les autres environnements. La base locale n'a pas besoin de
   tourner, et aucune variable d'environnement n'est nécessaire.

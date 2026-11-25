@@ -24,6 +24,20 @@ spring:
     # Flyway's default name is lowercase, which Oracle only accepts quoted.
     table: FLYWAY_SCHEMA_HISTORY
 
+  # Resource server: every request carries a JWT access token issued by Keycloak (ADR-007).
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          # Expected "iss" claim: the address of the realm as the browser sees it.
+          issuer-uri: ${ITSM_OIDC_ISSUER:http://localhost:8081/realms/nordal}
+          # Where the signing keys are downloaded, on the first request and not at startup: the
+          # backend starts without Keycloak. Separate from the issuer because, inside a container
+          # network, Keycloak is reached by another address than the public one.
+          jwk-set-uri: ${ITSM_OIDC_JWKS:${ITSM_OIDC_ISSUER:http://localhost:8081/realms/nordal}/protocol/openid-connect/certs}
+          # Expected "aud" claim: a token issued for another application is refused.
+          audiences: itsm-backend
+
 server:
   shutdown: graceful
 
