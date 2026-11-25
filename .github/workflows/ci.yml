@@ -37,6 +37,8 @@ jobs:
             backend:
               - 'backend/**'
               - 'deploy/compose/oracle/**'
+              # The integration tests read the Oracle image from this file.
+              - 'deploy/compose/docker-compose.yml'
               - '.github/workflows/ci.yml'
             frontend:
               - 'frontend/**'
