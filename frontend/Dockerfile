@@ -2,7 +2,7 @@
 
 # ---- Build stage: runs once, on the build machine's own architecture ($BUILDPLATFORM).
 # The output (HTML, JavaScript, CSS) is the same for every architecture.
-FROM --platform=$BUILDPLATFORM node:24.22.2-alpine AS build
+FROM --platform=$BUILDPLATFORM node:24.22.3-alpine AS build
 WORKDIR /src
 
 # Dependencies first: this layer is reused as long as the lock file does not change.
