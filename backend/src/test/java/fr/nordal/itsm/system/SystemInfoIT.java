@@ -4,6 +4,12 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import fr.nordal.itsm.system.SystemInfo.DatabaseStatus;
+import java.io.IOException;
+import java.io.UncheckedIOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import org.flywaydb.core.Flyway;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -33,8 +39,12 @@ class SystemInfoIT {
     private static final String OWNER_PASSWORD = "TestOwner2026";
     private static final String APP_PASSWORD = "TestApp2026";
 
+    // Same image as the local environment, read from the Compose file: a single place to change,
+    // and the one Dependabot updates.
+    private static final String ORACLE_IMAGE = oracleImageOfCompose();
+
     @Container
-    static final OracleContainer oracle = new OracleContainer("gvenzl/oracle-free:23.26.3-slim-faststart")
+    static final OracleContainer oracle = new OracleContainer(ORACLE_IMAGE)
             .withEnv("ITSM_OWNER_PASSWORD", OWNER_PASSWORD)
             .withEnv("ITSM_APP_PASSWORD", APP_PASSWORD)
             .withCopyFileToContainer(
@@ -47,6 +57,20 @@ class SystemInfoIT {
         registry.add("ITSM_DB_URL", oracle::getJdbcUrl);
         registry.add("ITSM_OWNER_PASSWORD", () -> OWNER_PASSWORD);
         registry.add("ITSM_APP_PASSWORD", () -> APP_PASSWORD);
+    }
+
+    private static String oracleImageOfCompose() {
+        try {
+            String compose = Files.readString(Path.of("../deploy/compose/docker-compose.yml"));
+            Matcher image = Pattern.compile("(?m)^\\s*image:\\s*(gvenzl/oracle-free:\\S+)")
+                    .matcher(compose);
+            if (!image.find()) {
+                throw new IllegalStateException("No gvenzl/oracle-free image in deploy/compose/docker-compose.yml");
+            }
+            return image.group(1);
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
     }
 
     @LocalServerPort
