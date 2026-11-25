@@ -111,6 +111,39 @@ docker compose down -v   # supprime aussi le volume : toutes les données sont p
 docker compose up -d     # nouvelle base, scripts d'initialisation rejoués
 ```
 
+## Mettre à jour l'image Oracle
+
+Les images `slim` de `gvenzl/oracle-free` ne livrent que **la dernière version des règles de
+fuseaux horaires** (fichier `timezlrg_<n>.dat`). Une base créée avec une image plus ancienne
+attend l'ancienne version, que la nouvelle image ne contient plus : aucune session ne peut
+s'ouvrir.
+
+```
+ORA-01804: failure to initialize timezone information
+```
+
+Constaté au passage de 23.26.3 (version 43) à 23.26.4 (version 46). La CI n'est pas concernée
+(chaque test crée une base neuve), ni la production (Autonomous Database, mise à jour par
+Oracle) : seule la base locale, conservée dans le volume, l'est.
+
+Tant que la base locale ne contient que des données de développement, la recréer :
+
+```bash
+docker compose rm -sf oracle           # arrête et supprime le conteneur
+docker volume rm itsm_oracle-data      # supprime les données de la base locale
+docker compose up -d --wait oracle     # nouvelle base, comptes recréés par le script d'init
+```
+
+Flyway réapplique les migrations au démarrage suivant du backend. Pour garder les données, il
+faudrait copier l'ancien fichier de fuseaux horaires dans le conteneur et mettre la base à
+jour avec `DBMS_DST` (procédure Oracle, plus longue).
+
+Version des règles de la base et du logiciel :
+
+```bash
+docker compose exec oracle bash -c 'ls $ORACLE_HOME/oracore/zoneinfo/'   # fichiers livrés
+```
+
 ## Production : Caddy, frontend et backend
 
 [`compose.prod.yml`](compose.prod.yml) décrit la pile de la VM ; la base est l'Autonomous
